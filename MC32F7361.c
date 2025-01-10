@@ -117,10 +117,17 @@ void adc_sel_channel(u8 adc_channel)
         break;
 
     case ADC_CHANNEL_LOAD: // P15 AN9，检测充电座 放电
+#if USE_MY_DEBUG
+        ADCHS3 = 0;
+        ADCHS2 = 1;
+        ADCHS1 = 1;
+        ADCHS0 = 0;
+#else
         ADCHS3 = 1;
         ADCHS2 = 0;
         ADCHS1 = 0;
         ADCHS0 = 1;
+#endif
         break;
 
     default:
@@ -301,6 +308,7 @@ void power_on_scan(void)
             {
                 // 如果检测到是开机：
                 flag_is_device_open = 1;
+                flag_is_enable_detect = 1;
             }
         }
     }
@@ -317,21 +325,77 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
+    PWM_ENABEL();
+
     while (1)
     {
         power_on_scan();
-        if (flag_is_device_open)
+        // if (flag_is_device_open)
         {
             // 如果设备可以开机，检测有没有负载，如果没有负载 -> 关机
             // 如果给负载充满电 -> 关机
-            
+
+            // 开机时，只检测一次有没有主机
+            // if (flag_is_enable_detect)
+            {
+                flag_is_enable_detect = 0;
+
+                // 打开充电
+                // PWM_ENABEL();
+
+                adc_sel_channel(ADC_CHANNEL_LOAD);
+                cnt = 0;
+                for (i = 0; i < 100; i++)
+                {
+                    adc_val = adc_get_val();
+                    send_data_msb(adc_val);
+                    if (adc_val < 1843)
+                    {
+                        cnt++;
+                    }
+                }
+
+                if (cnt >= 80)
+                {
+                    // 如果检测到了主机
+                    LED_RED_ON();
+                }
+                else
+                {
+                    // 如果检测不到主机
+                    LED_RED_OFF();
+                    // PWM_DISABEL();
+                }
+            }
+
+            // 检测主机的电池是否满电
+            adc_sel_channel(ADC_CHANNEL_LOAD);
+            cnt = 0;
+            for (i = 0; i < 100; i++)
+            {
+                adc_val = adc_get_val();
+                if (adc_val < 1229)
+                {
+                    cnt++;
+                }
+            }
+
+            // send_data_msb(adc_val);
+
+            if (cnt >= 80)
+            {
+                // LED_RED_OFF();
+                LED_GREEN_ON();
+            }
+            else
+            {
+                LED_GREEN_OFF();
+            }
         }
-        else
+        // else
         {
             // 如果设备不能开机，进入低功耗，由键盘中断、外部5V输入来唤醒
-
         }
-       
 
         __asm;
         clrwdt;

@@ -141,6 +141,10 @@ volatile bit_flag flag1;
 #define flag_is_device_open flag1.bits.bit1 // 标志位，设备是否开启
 #define flag_is_detect_host flag1.bits.bit2 // 标志位，是否检测到了主机
 
+#define flag_is_enable_detect flag1.bits.bit3 // 标志位，是否使能主机检测
+// #define flag_is_detect_
+
+
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
 void delay_ms(u16 xms)
