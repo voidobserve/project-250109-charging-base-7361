@@ -45,7 +45,7 @@
 #define FAIL 1
 #define PASS 0
 
-#define USE_MY_DEBUG 0
+#define USE_MY_DEBUG 1
 // ===================================================
 // 充电座的LED                                      //
 // ===================================================
@@ -119,7 +119,9 @@ volatile u8 cur_dev_status;
 // 充电座检测负载的相关配置                            //
 // ===================================================
 // 检测到有负载的ad值
-#define ADC_VAL_LOAD_THRESHOLD (3738 - 255) // 
+// #define ADC_VAL_LOAD_THRESHOLD ((2625 + 2315) / 2) // ad值通过测试得出
+#define ADC_VAL_LOAD_THRESHOLD (2470) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD (3000) // ad值通过测试得出
 
 // 定义adc的通道
 enum
@@ -159,12 +161,10 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-#define flag_is_in_charging flag1.bits.bit0      // 标志位，是否在充电
-#define flag_is_device_open flag1.bits.bit1      // 标志位，设备是否开启
-#define flag_is_charging_to_host flag1.bits.bit2 // 标志位，是否检测到了主机
-
-#define flag_is_enable_detect flag1.bits.bit3 // 标志位，是否使能主机检测
-
+// #define flag_is_in_charging flag1.bits.bit0      // 标志位，是否在充电
+// #define flag_is_device_open flag1.bits.bit1      // 标志位，设备是否开启
+// #define flag_is_charging_to_host flag1.bits.bit2 // 标志位，是否检测到了主机
+// #define flag_is_enable_detect flag1.bits.bit3 // 标志位，是否使能主机检测
 #define flag_is_low_bat flag1.bits.bit4 // 标志位，是否在充电时检测到低电量
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)

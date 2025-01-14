@@ -202,24 +202,17 @@ u16 adc_get_max_val(void)
     return g_adcmax;
 }
 
-// 获取adc单次转换后的值
-u16 adc_get_val_once(void)
-{
-    u16 g_temp_value = 0;
-    ADEOC = 0; // 清除ADC转换完成标志位，启动AD转换
-    while (!ADEOC)
-        ;                // 等待转换完成
-    g_temp_value = ADRH; // 取出转换后的值
-    g_temp_value = g_temp_value << 4 | (ADRL & 0x0F);
-    return g_temp_value;
-}
-
-// 对扫描到的按键事件进行处理
-void key_event_handle(void)
-{
-    // 处理完成后，清除按键事件
-    // key_event = KEY_EVENT_NONE;
-}
+// // 获取adc单次转换后的值
+// u16 adc_get_val_once(void)
+// {
+//     u16 g_temp_value = 0;
+//     ADEOC = 0; // 清除ADC转换完成标志位，启动AD转换
+//     while (!ADEOC)
+//         ;                // 等待转换完成
+//     g_temp_value = ADRH; // 取出转换后的值
+//     g_temp_value = g_temp_value << 4 | (ADRL & 0x0F);
+//     return g_temp_value;
+// }
 
 /************************************************
 ;  *    @函数名            : Sys_Init
@@ -234,6 +227,7 @@ void Sys_Init(void)
     IO_Init();
 
     timer0_pwm_config();
+    timer3_config();
     adc_config();
 
 #if USE_MY_DEBUG
@@ -247,11 +241,9 @@ void Sys_Init(void)
 #endif
 
     // 检测霍尔元器件的引脚:
-    P13PU = 0; // 上拉
+    // P13PU = 0; // 上拉  --  可以不加这一句，同样能检测到
     P13OE = 0; // 输入模式
-    P13KE = 1; // 使能键盘中断
-
-    flag_is_enable_detect = 1;
+    // P13KE = 1; // 使能键盘中断
 
     GIE = 1;
 }
@@ -367,7 +359,7 @@ u8 is_detect_load(void)
         }
     }
 
-    if (max_adc_val > 3000)
+    if (max_adc_val > ADC_VAL_LOAD_THRESHOLD)
     {
         // 没有负载
         return 0;
@@ -376,6 +368,93 @@ u8 is_detect_load(void)
     {
         // 有负载
         return 1;
+    }
+}
+
+// 关闭给主机的充电：
+void stop_charging_the_host(void)
+{
+    LED_GREEN_OFF();
+    PWM_DISABEL(); // 关闭控制充电的pwm
+}
+
+void low_power_scan_handle(void)
+{
+    if (CUR_STATUS_NONE == cur_dev_status)
+    {
+    low_power_label:
+        // 进入低功耗
+        GIE = 0; // 禁用所有中断
+        LED_GREEN_OFF();
+        LED_RED_OFF();
+        PWM_DISABEL();
+        // LED引脚配置为输入:
+        P00OE = 0;
+        P17OE = 0;
+        // PWM引脚输出低电平:
+        P16D = 0;
+        // 关闭定时器 3
+        T3EN = 0;
+        T3IE = 0;
+// 关闭adc，检测ad的引脚配置为输入:
+#if USE_MY_DEBUG
+        // 检测充电座放电电流的引脚：
+        P11OE = 0; // 输入模式
+        P11DC = 0; // 数字模式
+#else
+        // 检测充电座放电电流的引脚：
+        P15OE = 0; // 输入模式
+        P15DC = 0; // 数字模式
+#endif
+        ADEN = 0;
+        // 检测充电的引脚和检测霍尔的引脚配置为键盘中断触发
+        P13KE = 1;
+// 充电检测引脚配置为键盘中断触发
+#if USE_MY_DEBUG
+        P03KE = 1;
+#else
+        P04KE = 1;
+#endif
+        KBIF = 0;
+        KBIE = 1;
+        HFEN = 0; // 关闭高速时钟
+        LFEN = 1;
+        // 休眠前注意关闭不用的外设
+        Nop();
+        Nop();
+        Stop();
+        Nop();
+        Nop();
+        HFEN = 1; // 开启高速时钟
+#if USE_MY_DEBUG
+        P03KE = 0;
+#else
+        P04KE = 0;
+#endif
+        P13KE = 0; // 关闭键盘中断
+        KBIE = 0;
+        KBIF = 0;
+
+        // 检测电池电压是否小于3.0V或未进行充电
+        if (CHARGE_PIN)
+        {
+            // 如果检测到充电，什么也不做
+        }
+        else
+        {
+            // 如果没有检测到充电，检测电池电量是否大于3.0V，才允许开机
+            // adc_config();
+            // adc_sel_channel(ADC_CHANNEL_BAT);
+            // adc_val = adc_get_val();
+            // if (adc_val < 1485) // 如果检测到电池电压小于2.9V
+            // {
+            //     // goto low_power_label;  // 这里会导致无法从正常的电压下启动
+            // }
+        }
+
+        Sys_Init();
+        delay_ms(1);
+        GIE = 1;
     }
 }
 
@@ -390,9 +469,26 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
+    // flag_is_low_bat = 1; // 测试时使用
+    PWM_ENABEL(); // 测试时使用
+
     while (1)
     {
+#if 1 // 测试在无线充电时，充电座检测到的ad值
+        adc_sel_channel(ADC_CHANNEL_LOAD);
+        for (i = 0; i < 100; i++)
+        {
+            adc_val = adc_get_max_val();
+            if (adc_val > tmp_val)
+            {
+                tmp_val = adc_val;
+                send_data_msb(tmp_val);
+            }
+        }
 
+#endif
+
+#if 0
         if (CUR_STATUS_NONE == cur_dev_status)
         {
             // 如果当前设备没有任何操作，检测是否有
@@ -407,7 +503,7 @@ void main(void)
                 // 打开充电
                 PWM_ENABEL();
                 // LED_GREEN_ON(); // 不能放在这里，会导致灯一直闪
-                delay_ms(1);
+                delay_ms(1); // 等待电平稳定
                 ret_u8 = is_detect_load();
                 if (ret_u8)
                 {
@@ -418,8 +514,9 @@ void main(void)
                 else
                 {
                     // 没有负载
-                    LED_GREEN_OFF();
-                    PWM_DISABEL(); // 关闭控制充电的pwm
+                    // LED_GREEN_OFF();
+                    // PWM_DISABEL(); // 关闭控制充电的pwm
+                    stop_charging_the_host();
                 }
             }
 
@@ -427,18 +524,20 @@ void main(void)
             if (ret_u8)
             {
                 // 如果充电座正在被充电，关闭给主机的充电
-                LED_GREEN_OFF();
-                PWM_DISABEL(); // 关闭控制充电的pwm
-                // flag_is_charging_to_host = 0; // 表示未检测到主机
+                // LED_GREEN_OFF();
+                // PWM_DISABEL(); // 关闭控制充电的pwm
+                stop_charging_the_host();
 
                 LED_RED_ON();
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
             }
+
+            // 如果执行到这里还是没有改变状态，进入低功耗
+            low_power_scan_handle();
         }
         else if (CUR_STATUS_IN_CHARGING == cur_dev_status)
         {
             // 如果正在给主机充电，检测：
-            // 是否检测不到了负载
             // 是否插入了充电器
             // 是否打开了盖子
             // 检测是否低电量
@@ -447,13 +546,14 @@ void main(void)
             if (ret_u8)
             {
                 // 有负载
-                LED_GREEN_ON();
+                // LED_GREEN_ON(); // 不能在这里点亮绿灯
             }
             else
             {
                 // 没有负载
-                LED_GREEN_OFF();
-                PWM_DISABEL(); // 关闭控制充电的pwm
+                // LED_GREEN_OFF();
+                // PWM_DISABEL(); // 关闭控制充电的pwm
+                stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_NONE;
             }
 
@@ -461,8 +561,9 @@ void main(void)
             if (ret_u8)
             {
                 // 如果打开了收纳盒，断开充电：
-                LED_GREEN_OFF();
-                PWM_DISABEL(); // 关闭控制充电的pwm
+                // LED_GREEN_OFF();
+                // PWM_DISABEL(); // 关闭控制充电的pwm
+                stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_NONE;
             }
 
@@ -472,18 +573,30 @@ void main(void)
             {
                 // 如果检测到电池电电量小于2.9V
                 // 断开充电：
-                LED_GREEN_OFF();
-                PWM_DISABEL(); // 关闭控制充电的pwm
+                // LED_GREEN_OFF();
+                // PWM_DISABEL(); // 关闭控制充电的pwm
+                stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_NONE;
             }
+            else if (adc_val < 1638) // 如果充电座的电池电量小于3.2V
+            {
+                //
+                flag_is_low_bat = 1;
+                LED_GREEN_OFF();
+            }
+            // else
+            // {
+            //     flag_is_low_bat = 0;
+            // }
 
             ret_u8 = is_in_charging();
             if (ret_u8)
             {
-                // 如果充电座正在被充电，关闭给主机的充电
+                // 如果充电座正在被充电，关闭给主机的充电，防止电流过高
                 LED_GREEN_OFF();
-                PWM_DISABEL(); // 关闭控制充电的pwm
-                LED_RED_ON();
+                // PWM_DISABEL(); // 关闭控制充电的pwm
+                // LED_RED_ON();
+                stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
             }
         }
@@ -516,10 +629,11 @@ void main(void)
             if (0 == ret_u8)
             {
                 LED_RED_OFF();
-                cur_dev_status = CUR_STATUS_NONE; 
+                cur_dev_status = CUR_STATUS_NONE;
             }
         }
-    }
+#endif
+    } // while (1)
 
     __asm;
     clrwdt;
@@ -550,8 +664,10 @@ void int_isr(void) __interrupt
         static u16 blink_cnt = 0;
         if (CUR_STATUS_IN_CHARGING == cur_dev_status && flag_is_low_bat)
         {
+            // 如果在充电座给主机充电时，检测到充电座的电池处于低电量
             if (blink_cnt < 65535)
                 blink_cnt++;
+
             if (blink_cnt <= 500)
             {
                 LED_RED_ON();
