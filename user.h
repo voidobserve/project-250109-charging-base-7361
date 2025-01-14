@@ -45,7 +45,7 @@
 #define FAIL 1
 #define PASS 0
 
-#define USE_MY_DEBUG 1
+#define USE_MY_DEBUG 0
 // ===================================================
 // 充电座的LED                                      //
 // ===================================================
@@ -103,6 +103,24 @@
 #define CHARGE_PIN (P04D) // 充电检测引脚
 #endif
 
+// ===================================================
+// 设备当前状态的相关配置                            //
+// ===================================================
+enum
+{
+    CUR_STATUS_NONE = 0,
+    CUR_STATUS_BE_CHARGING, // 被充电
+    CUR_STATUS_IN_CHARGING, // 给主机充电
+    // CUR_STATUS_LOW_BAT, // 低电量
+};
+volatile u8 cur_dev_status;
+
+// ===================================================
+// 充电座检测负载的相关配置                            //
+// ===================================================
+// 检测到有负载的ad值
+#define ADC_VAL_LOAD_THRESHOLD (3738 - 255) // 
+
 // 定义adc的通道
 enum
 {
@@ -116,9 +134,13 @@ volatile u8 abuf;
 volatile u8 statusbuf;
 
 //===============Global Variable===============
-volatile u8 i; // 循环计数值
+volatile u8 i;   // 循环计数值
 volatile u8 cnt; // 循环中使用到的事件计数
+volatile u8 ret_u8;
 volatile u16 adc_val;
+volatile u16 tmp_val;
+
+// volatile u16 max_adc_val; // 检测负载时，用于存放一段时间内检测到的最大的ad值
 
 //============Define  Flag=================
 typedef union
@@ -137,13 +159,13 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-#define flag_is_in_charging flag1.bits.bit0 // 标志位，是否在充电
-#define flag_is_device_open flag1.bits.bit1 // 标志位，设备是否开启
-#define flag_is_detect_host flag1.bits.bit2 // 标志位，是否检测到了主机
+#define flag_is_in_charging flag1.bits.bit0      // 标志位，是否在充电
+#define flag_is_device_open flag1.bits.bit1      // 标志位，设备是否开启
+#define flag_is_charging_to_host flag1.bits.bit2 // 标志位，是否检测到了主机
 
 #define flag_is_enable_detect flag1.bits.bit3 // 标志位，是否使能主机检测
-// #define flag_is_detect_
 
+#define flag_is_low_bat flag1.bits.bit4 // 标志位，是否在充电时检测到低电量
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
