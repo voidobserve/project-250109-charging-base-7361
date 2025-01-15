@@ -45,7 +45,8 @@
 #define FAIL 1
 #define PASS 0
 
-#define USE_MY_DEBUG 1
+#define USE_MY_DEBUG 0
+#define AD_OFFSET 41 // 检测到的ad值与实际的电压值有偏差，要减去这个值
 // ===================================================
 // 充电座的LED                                      //
 // ===================================================
@@ -111,7 +112,7 @@ enum
     CUR_STATUS_NONE = 0,
     CUR_STATUS_BE_CHARGING, // 被充电
     CUR_STATUS_IN_CHARGING, // 给主机充电
-    // CUR_STATUS_LOW_BAT, // 低电量
+    CUR_STATUS_POWER_OFF, // 低电量关机
 };
 volatile u8 cur_dev_status;
 
@@ -120,8 +121,9 @@ volatile u8 cur_dev_status;
 // ===================================================
 // 检测到有负载的ad值
 // #define ADC_VAL_LOAD_THRESHOLD ((2625 + 2315) / 2) // ad值通过测试得出
-#define ADC_VAL_LOAD_THRESHOLD (2470) // ad值通过测试得出
-// #define ADC_VAL_LOAD_THRESHOLD (3000) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD ((2477 + 2129) / 2)// ad值通过测试得出
+ 
+#define ADC_VAL_LOAD_THRESHOLD (3000) // ad值通过测试得出
 
 // 定义adc的通道
 enum
