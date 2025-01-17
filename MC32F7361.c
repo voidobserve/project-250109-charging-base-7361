@@ -68,9 +68,9 @@ void adc_config(void)
     P11OE = 0; // 输入模式
     P11DC = 1; // 模拟模式
 
-    // 测试时，使用 P05 AN4 代替 1/4VDD 通道，检测的ad值不变
-    P05OE = 0;
-    P05DC = 1; // 模拟模式
+    // // 测试时，使用 P05 AN4 代替 1/4VDD 通道，检测的ad值不变
+    // P05OE = 0;
+    // P05DC = 1; // 模拟模式
 #else
     // 检测充电座放电电流的引脚：
     P15OE = 0; // 输入模式
@@ -123,10 +123,15 @@ void adc_sel_channel(u8 adc_channel)
     {
     case ADC_CHANNEL_BAT:
 #if USE_MY_DEBUG
-        // 测试时，用 P05 AN4 代替 1/4VDD 通道
-        ADCHS3 = 0;
-        ADCHS2 = 1;
-        ADCHS1 = 0;
+        // // 测试时，用 P05 AN4 代替 1/4VDD 通道
+        // ADCHS3 = 0;
+        // ADCHS2 = 1;
+        // ADCHS1 = 0;
+        // ADCHS0 = 0;
+        // 选择 1/4 VDD 通道
+        ADCHS3 = 1;
+        ADCHS2 = 0;
+        ADCHS1 = 1;
         ADCHS0 = 0;
 #else
         // 选择 1/4 VDD 通道
@@ -402,8 +407,8 @@ void low_power_scan_handle(void)
         LED_RED_OFF();
         PWM_DISABEL();
         // LED引脚配置为输入:
-        P00OE = 0;
-        P17OE = 0;
+        // P00OE = 0;
+        // P17OE = 0;
         // PWM引脚输出低电平:
         P16D = 0;
         // 关闭定时器 3
@@ -430,8 +435,9 @@ void low_power_scan_handle(void)
 #endif
         KBIF = 0;
         KBIE = 1;
+        LVDEN = 0;
         HFEN = 0; // 关闭高速时钟
-        LFEN = 1;
+        LFEN = 0; // 关闭低速时钟
         // 休眠前注意关闭不用的外设
         Nop();
         Nop();
@@ -439,6 +445,7 @@ void low_power_scan_handle(void)
         Nop();
         Nop();
         HFEN = 1; // 开启高速时钟
+        LVDEN = 1;
 #if USE_MY_DEBUG
         P03KE = 0;
 #else
@@ -486,7 +493,7 @@ void main(void)
     delay_ms(10);
 
     // flag_is_low_bat = 1; // 测试时使用
-    // PWM_ENABEL(); // 测试时使用
+    PWM_ENABEL(); // 测试时使用
 
     while (1)
     {
@@ -494,14 +501,17 @@ void main(void)
         adc_sel_channel(ADC_CHANNEL_LOAD);
         for (i = 0; i < 100; i++)
         {
-            adc_val = adc_get_max_val();
-            if (adc_val > tmp_val)
-            {
-                tmp_val = adc_val;
-                send_data_msb(tmp_val);
-            }
+            // adc_val = adc_get_max_val();
+            adc_val = adc_get_val();
+            // if (adc_val > tmp_val)
+            // {
+            //     tmp_val = adc_val;
+            //     send_data_msb(tmp_val);
+            // }
+
+            send_data_msb(adc_val);
         }
-#endif 
+#endif
 
 #if 1
         if (CUR_STATUS_NONE == cur_dev_status)
