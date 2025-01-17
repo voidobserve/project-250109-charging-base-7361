@@ -90,7 +90,8 @@ void timer0_pwm_config(void)
     // T0CNT = 50 - 1;
     // 理论上重装载值应该是128，但是时钟是RC振荡得来的，不准确，需要加上补偿
     T0LOAD = (128 + 10) - 1; //
-    T0DATA = 23 + 10;
+    // T0DATA = 23 + 10;
+    T0DATA = 59 + 10;
     PWMCR0 = 0x00; // 正向输出
     PWMCR1 = 0x18; // 时钟源FHOSC × 2  普通模式
     // PWM0OPS = 0; // 选择P16端口输出 (可以不写，默认就是0)
@@ -201,8 +202,8 @@ u16 adc_get_val(void)
 u16 adc_get_max_val(void)
 {
     u8 i = 0; // adc采集次数的计数
-    u16 g_temp_value = 0;
-    u16 g_adcmax = 0;
+    volatile u16 g_temp_value = 0;
+    volatile u16 g_adcmax = 0;
 
     // 采集40次
     for (i = 0; i < 40; i++)
@@ -269,16 +270,28 @@ void Sys_Init(void)
 // 充电检测
 u8 is_in_charging(void)
 {
+    static u8 last_status = 0;
     u8 ret = 0;
-
-    // if (is_open_lid())
-    // {
-    //     return 0;
-    // }
+    u8 i = 0;
+    u8 cnt = 0;
 
     if (CHARGE_PIN)
     {
-        cnt = 0;
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+
+    if (ret == last_status)
+    {
+        return ret;
+    }
+
+    if (CHARGE_PIN)
+    {
+        // cnt = 0;
         for (i = 0; i < 200; i++)
         {
             if (CHARGE_PIN)
@@ -297,7 +310,7 @@ u8 is_in_charging(void)
     }
     else
     {
-        cnt = 0;
+        // cnt = 0;
         for (i = 0; i < 200; i++)
         {
             if (0 == CHARGE_PIN)
@@ -315,16 +328,35 @@ u8 is_in_charging(void)
         }
     }
 
+    last_status = ret;
+
     return ret;
 }
 
 u8 is_open_lid(void)
 {
+    static u8 last_status = 0;
     u8 ret = 0;
+    u8 i = 0;
+    u8 cnt = 0;
+    if (P13D)
+    {
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+
+    // 如果没有发生变化
+    if (ret == last_status)
+    {
+        return ret;
+    }
 
     if (P13D) // 如果收纳盒是开启的
     {
-        cnt = 0;
+        // cnt = 0;
         for (i = 0; i < 200; i++)
         {
             if (P13D)
@@ -342,7 +374,7 @@ u8 is_open_lid(void)
     }
     else // 如果收纳盒是关闭的
     {
-        cnt = 0;
+        // cnt = 0;
         for (i = 0; i < 200; i++)
         {
             if (0 == P13D)
@@ -359,18 +391,21 @@ u8 is_open_lid(void)
         }
     }
 
+    last_status = ret;
+
     return ret;
 }
 
-// 是否检测到负载
+// 是否检测到负载 -- 调用一次约72ms
 u8 is_detect_load(void)
 {
-    // u8 ret = 0;
     u16 max_adc_val = 0;
+    u8 i = 0;
     adc_sel_channel(ADC_CHANNEL_LOAD);
     for (i = 0; i < 100; i++)
     {
-        adc_val = adc_get_max_val();
+        // adc_val = adc_get_max_val(); // 用这个函数会采集到4095
+        adc_val = adc_get_val();
         if (adc_val > max_adc_val)
         {
             max_adc_val = adc_val;
@@ -379,13 +414,13 @@ u8 is_detect_load(void)
 
     if (max_adc_val > ADC_VAL_LOAD_THRESHOLD)
     {
-        // 没有负载
-        return 0;
+        // 有负载
+        return 1;
     }
     else
     {
-        // 有负载
-        return 1;
+        // 没有负载
+        return 0;
     }
 }
 
@@ -435,7 +470,7 @@ void low_power_scan_handle(void)
 #endif
         KBIF = 0;
         KBIE = 1;
-        LVDEN = 0;
+        // LVDEN = 0; // 是否关闭LVD都不影响待机电流
         HFEN = 0; // 关闭高速时钟
         LFEN = 0; // 关闭低速时钟
         // 休眠前注意关闭不用的外设
@@ -445,7 +480,7 @@ void low_power_scan_handle(void)
         Nop();
         Nop();
         HFEN = 1; // 开启高速时钟
-        LVDEN = 1;
+                  // LVDEN = 1;
 #if USE_MY_DEBUG
         P03KE = 0;
 #else
@@ -455,23 +490,23 @@ void low_power_scan_handle(void)
         KBIE = 0;
         KBIF = 0;
 
-        // 检测电池电压是否小于3.0V或未进行充电
-        if (CHARGE_PIN)
-        {
-            // 如果检测到充电，什么也不做
-            // DEBUG_PIN = 1;
-        }
-        else
-        {
-            // 如果没有检测到充电，检测电池电量是否大于3.0V，才允许开机
-            // adc_config();
-            // adc_sel_channel(ADC_CHANNEL_BAT);
-            // adc_val = adc_get_val();
-            // if (adc_val < 1485) // 如果检测到电池电压小于2.9V
-            // {
-            //     // goto low_power_label;  // 这里会导致无法从正常的电压下启动
-            // }
-        }
+        // // 检测电池电压是否小于3.0V或未进行充电
+        // if (CHARGE_PIN)
+        // {
+        //     // 如果检测到充电，什么也不做
+        //     // DEBUG_PIN = 1;
+        // }
+        // else
+        // {
+        //     // 如果没有检测到充电，检测电池电量是否大于3.0V，才允许开机
+        //     // adc_config();
+        //     // adc_sel_channel(ADC_CHANNEL_BAT);
+        //     // adc_val = adc_get_val();
+        //     // if (adc_val < 1485) // 如果检测到电池电压小于2.9V
+        //     // {
+        //     //     // goto low_power_label;  // 这里会导致无法从正常的电压下启动
+        //     // }
+        // }
 
         // DEBUG_PIN = ~DEBUG_PIN; // 测试是否能唤醒单片机
 
@@ -492,8 +527,17 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
+    // LED_GREEN_ON();
+    // delay_ms(1000);
+    // LED_GREEN_OFF();
+
+#if 1
     // flag_is_low_bat = 1; // 测试时使用
     PWM_ENABEL(); // 测试时使用
+    LED_GREEN_ON();
+    // PWM_ENABEL();
+    T3EN = 0;
+#endif
 
     while (1)
     {
@@ -501,19 +545,39 @@ void main(void)
         adc_sel_channel(ADC_CHANNEL_LOAD);
         for (i = 0; i < 100; i++)
         {
-            // adc_val = adc_get_max_val();
+            // adc_val = adc_get_max_val(); // 用这个函数会采集到4095
             adc_val = adc_get_val();
-            // if (adc_val > tmp_val)
-            // {
-            //     tmp_val = adc_val;
-            //     send_data_msb(tmp_val);
-            // }
-
-            send_data_msb(adc_val);
+            if (adc_val > tmp_val)
+            {
+                tmp_val = adc_val;
+                send_data_msb(tmp_val);
+            }
         }
 #endif
 
-#if 1
+#if 0
+        // ret_u8 = is_open_lid();
+        // if (ret_u8)
+        // {
+        //     LED_GREEN_ON();
+        // }
+        // else
+        // {
+        //     LED_GREEN_OFF();
+        // }
+
+        ret_u8 = is_detect_load();
+        if (ret_u8)
+        {
+            LED_GREEN_ON();
+        }
+        else
+        {
+            LED_GREEN_OFF();
+        }
+#endif
+
+#if 0
         if (CUR_STATUS_NONE == cur_dev_status)
         {
             // 如果当前设备没有任何操作，检测是否有
@@ -527,20 +591,37 @@ void main(void)
 
                 // 打开充电
                 PWM_ENABEL();
-                // LED_GREEN_ON(); // 不能放在这里，会导致灯一直闪
-                delay_ms(1); // 等待电平稳定
-                ret_u8 = is_detect_load();
-                if (ret_u8)
+                LED_GREEN_ON(); //
+                delay_ms(1000); // 等待电平稳定
+                flag_is_detecting_load = 1;
+                cnt = 0;
+                while (flag_is_detecting_load)
+                {
+                    ret_u8 = is_detect_load();
+                    if (ret_u8)
+                    {
+                        // 如果检测到有负载:
+                        if (cnt < 255)
+                            cnt++;
+                    }
+                    else
+                    {
+                    }
+
+                    if (1 == is_open_lid())
+                    {
+                        break;
+                    }
+                }
+
+                if (cnt >= 50)
                 {
                     // 有负载
-                    LED_GREEN_ON();
                     cur_dev_status = CUR_STATUS_IN_CHARGING;
                 }
                 else
                 {
                     // 没有负载
-                    // LED_GREEN_OFF();
-                    // PWM_DISABEL(); // 关闭控制充电的pwm
                     stop_charging_the_host();
                 }
             }
@@ -549,8 +630,6 @@ void main(void)
             if (ret_u8)
             {
                 // 如果充电座正在被充电，关闭给主机的充电
-                // LED_GREEN_OFF();
-                // PWM_DISABEL(); // 关闭控制充电的pwm
                 stop_charging_the_host();
 
                 LED_RED_ON();
@@ -567,48 +646,61 @@ void main(void)
             // 是否打开了盖子
             // 检测是否低电量
 
-            ret_u8 = is_detect_load();
+            ret_u8 = is_detect_load(); // 调用一次约72-73ms
             if (ret_u8)
             {
                 // 有负载
-                // LED_GREEN_ON(); // 不能在这里点亮绿灯
+                cnt = 0;
             }
             else
             {
                 // 没有负载
-                // LED_GREEN_OFF();
-                // PWM_DISABEL(); // 关闭控制充电的pwm
-                stop_charging_the_host();
-                cur_dev_status = CUR_STATUS_NONE;
+                cnt++;
+            }
+
+            DEBUG_PIN = ~DEBUG_PIN; // 目前循环一次约75ms
+
+            if (cnt >= 50)
+            {
+                cnt = 0;
+                // 如果确实没有检测到负载 说明已经给主机充满电
+                flag_is_fully_charged = 1;
+                PWM_DISABEL(); // 关闭控制充电的pwm
+                LED_GREEN_ON();
+            }
+
+            if (flag_is_fully_charged)
+            {
+                LED_GREEN_ON();
             }
 
             ret_u8 = is_open_lid();
             if (ret_u8)
             {
                 // 如果打开了收纳盒，断开充电：
-                // LED_GREEN_OFF();
-                // PWM_DISABEL(); // 关闭控制充电的pwm
-                stop_charging_the_host(); 
+                stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_NONE;
                 flag_is_low_bat = 0; // 不给主机充电时，清空该标志位
+                flag_is_fully_charged = 0;
             }
 
             adc_sel_channel(ADC_CHANNEL_BAT);
             adc_val = adc_get_val();
-            if (adc_val < 1485 - AD_OFFSET)
+            // if (adc_val < 1485 - AD_OFFSET) // 2.9V
+            if (adc_val < 1587 - AD_OFFSET) // 3.1V
             {
-                // 如果检测到电池电电量小于2.9V
+                // 如果检测到电池电电量小于 xx V
                 // 断开充电：
-                // LED_GREEN_OFF();
-                // PWM_DISABEL(); // 关闭控制充电的pwm
-                stop_charging_the_host();
                 // DEBUG_PIN = ~DEBUG_PIN;
                 cur_dev_status = CUR_STATUS_POWER_OFF;
+                flag_is_fully_charged = 0;
+                stop_charging_the_host();
             }
             else if (adc_val < 1638 - AD_OFFSET) // 如果充电座的电池电量小于3.2V
             {
                 //
                 flag_is_low_bat = 1;
+                flag_is_fully_charged = 0;
                 LED_GREEN_OFF(); // 关掉绿灯，让红灯慢闪
             }
             else
@@ -616,7 +708,7 @@ void main(void)
                 flag_is_low_bat = 0;
                 // 如果不小于3.2V，重新点亮绿灯
                 // (防止电池电压从3.2V调到3.2以下，又升回3.2V，指示灯会全部熄灭，不会点亮绿色或红色的指示灯的情况)
-                LED_GREEN_ON();
+                // LED_GREEN_ON();
             }
 
             if (0 == flag_is_low_bat)
@@ -635,6 +727,7 @@ void main(void)
                 // LED_RED_ON();
                 stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                flag_is_fully_charged = 0;
                 LED_RED_ON();
             }
         }
@@ -716,11 +809,11 @@ void int_isr(void) __interrupt
             if (blink_cnt < 65535)
                 blink_cnt++;
 
-            if (blink_cnt <= 500)
+            if (blink_cnt <= 400)
             {
                 LED_RED_ON();
             }
-            else if (blink_cnt <= 1000)
+            else if (blink_cnt <= 800)
             {
                 LED_RED_OFF();
             }
@@ -733,6 +826,56 @@ void int_isr(void) __interrupt
         {
             // LED_RED_OFF();
             blink_cnt = 0;
+        }
+
+        //
+        {
+            static u16 led_green_blink_cnt = 0;
+            // 如果充电座正在给主机充电，并且充电座的电池不处于低电量
+            if (CUR_STATUS_IN_CHARGING == cur_dev_status &&
+                0 == flag_is_low_bat &&
+                0 == flag_is_fully_charged)
+            {
+                // if (led_green_blink_cnt < 65535)
+                {
+                    led_green_blink_cnt++;
+                }
+
+                if (led_green_blink_cnt <= 500)
+                {
+                    LED_GREEN_ON();
+                }
+                else if (led_green_blink_cnt <= 1000)
+                {
+                    LED_GREEN_OFF();
+                }
+                else
+                {
+                    led_green_blink_cnt = 0;
+                }
+            }
+            else
+            {
+                led_green_blink_cnt = 0;
+            }
+        }
+
+        { // 负责在刚检测到霍尔时，控制持续检测负载的时间
+            static u16 __detecting_load_cnt = 0;
+            if (flag_is_detecting_load)
+            {
+                // if (__detecting_load_cnt < 65535)
+                __detecting_load_cnt++;
+
+                if (__detecting_load_cnt >= 7000)
+                {
+                    flag_is_detecting_load = 0;
+                }
+            }
+            else
+            {
+                __detecting_load_cnt = 0;
+            }
         }
 
         T3IF = 0;

@@ -112,7 +112,8 @@ enum
     CUR_STATUS_NONE = 0,
     CUR_STATUS_BE_CHARGING, // 被充电
     CUR_STATUS_IN_CHARGING, // 给主机充电
-    CUR_STATUS_POWER_OFF, // 低电量关机
+    // CUR_STATUS_IS_FULLY_CHARGED, // 给主机充满电
+    CUR_STATUS_POWER_OFF,   // 低电量关机
 };
 volatile u8 cur_dev_status;
 
@@ -122,8 +123,9 @@ volatile u8 cur_dev_status;
 // 检测到有负载的ad值
 // #define ADC_VAL_LOAD_THRESHOLD ((2625 + 2315) / 2) // ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD ((2477 + 2129) / 2)// ad值通过测试得出
- 
-#define ADC_VAL_LOAD_THRESHOLD (3000) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD ((1260 + 2463) / 2) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD (1400) // ad值通过测试得出
+#define ADC_VAL_LOAD_THRESHOLD (700) // ad值通过测试得出
 
 // 定义adc的通道
 enum
@@ -163,11 +165,11 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-// #define flag_is_in_charging flag1.bits.bit0      // 标志位，是否在充电
-// #define flag_is_device_open flag1.bits.bit1      // 标志位，设备是否开启
-// #define flag_is_charging_to_host flag1.bits.bit2 // 标志位，是否检测到了主机
-// #define flag_is_enable_detect flag1.bits.bit3 // 标志位，是否使能主机检测
-#define flag_is_low_bat flag1.bits.bit4 // 标志位，是否在充电时检测到低电量
+#define flag_is_low_bat flag1.bits.bit0 // 标志位，是否在充电时检测到低电量
+#define flag_is_fully_charged flag1.bits.bit1 // 标志位，是否给主机充满电
+
+#define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载
+// #define flag_is_
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
