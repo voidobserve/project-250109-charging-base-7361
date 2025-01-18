@@ -81,7 +81,7 @@
         } while (0);           \
     }
 
-#define PWM_ENABEL()    \
+#define PWM_ENABLE()    \
     {                   \
         do              \
         {               \
@@ -89,7 +89,7 @@
             T0EN = 1;   \
         } while (0);    \
     }
-#define PWM_DISABEL()   \
+#define PWM_DISABLE()   \
     {                   \
         do              \
         {               \
@@ -113,7 +113,7 @@ enum
     CUR_STATUS_BE_CHARGING, // 被充电
     CUR_STATUS_IN_CHARGING, // 给主机充电
     // CUR_STATUS_IS_FULLY_CHARGED, // 给主机充满电
-    CUR_STATUS_POWER_OFF,   // 低电量关机
+    CUR_STATUS_POWER_OFF, // 低电量关机
 };
 volatile u8 cur_dev_status;
 
@@ -125,7 +125,7 @@ volatile u8 cur_dev_status;
 // #define ADC_VAL_LOAD_THRESHOLD ((2477 + 2129) / 2)// ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD ((1260 + 2463) / 2) // ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD (1400) // ad值通过测试得出
-#define ADC_VAL_LOAD_THRESHOLD (700) // ad值通过测试得出
+#define ADC_VAL_LOAD_THRESHOLD (850) // ad值通过测试得出
 
 // 定义adc的通道
 enum
@@ -165,7 +165,7 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-#define flag_is_low_bat flag1.bits.bit0 // 标志位，是否在充电时检测到低电量
+#define flag_is_low_bat flag1.bits.bit0       // 标志位，是否在充电时检测到低电量
 #define flag_is_fully_charged flag1.bits.bit1 // 标志位，是否给主机充满电
 
 #define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载

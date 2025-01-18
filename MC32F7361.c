@@ -91,7 +91,10 @@ void timer0_pwm_config(void)
     // 理论上重装载值应该是128，但是时钟是RC振荡得来的，不准确，需要加上补偿
     T0LOAD = (128 + 10) - 1; //
     // T0DATA = 23 + 10;
-    T0DATA = 59 + 10;
+    // T0DATA = 59 + 10;
+    T0DATA = 49 + 10;
+
+
     PWMCR0 = 0x00; // 正向输出
     PWMCR1 = 0x18; // 时钟源FHOSC × 2  普通模式
     // PWM0OPS = 0; // 选择P16端口输出 (可以不写，默认就是0)
@@ -428,7 +431,7 @@ u8 is_detect_load(void)
 void stop_charging_the_host(void)
 {
     LED_GREEN_OFF();
-    PWM_DISABEL(); // 关闭控制充电的pwm
+    PWM_DISABLE(); // 关闭控制充电的pwm
 }
 
 void low_power_scan_handle(void)
@@ -440,7 +443,7 @@ void low_power_scan_handle(void)
         GIE = 0; // 禁用所有中断
         LED_GREEN_OFF();
         LED_RED_OFF();
-        PWM_DISABEL();
+        PWM_DISABLE();
         // LED引脚配置为输入:
         // P00OE = 0;
         // P17OE = 0;
@@ -527,15 +530,14 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
-    // LED_GREEN_ON();
-    // delay_ms(1000);
-    // LED_GREEN_OFF();
-
-#if 1
-    // flag_is_low_bat = 1; // 测试时使用
-    PWM_ENABEL(); // 测试时使用
     LED_GREEN_ON();
-    // PWM_ENABEL();
+    delay_ms(1000);
+    LED_GREEN_OFF();
+
+#if 0
+    // flag_is_low_bat = 1; // 测试时使用 
+    LED_GREEN_ON();
+    PWM_ENABLE(); 
     T3EN = 0;
 #endif
 
@@ -547,7 +549,7 @@ void main(void)
         {
             // adc_val = adc_get_max_val(); // 用这个函数会采集到4095
             adc_val = adc_get_val();
-            if (adc_val > tmp_val)
+            // if (adc_val > tmp_val)
             {
                 tmp_val = adc_val;
                 send_data_msb(tmp_val);
@@ -577,7 +579,7 @@ void main(void)
         }
 #endif
 
-#if 0
+#if 1
         if (CUR_STATUS_NONE == cur_dev_status)
         {
             // 如果当前设备没有任何操作，检测是否有
@@ -590,9 +592,9 @@ void main(void)
                 // 如果给负载充满电 -> 关机
 
                 // 打开充电
-                PWM_ENABEL();
+                PWM_ENABLE();
                 LED_GREEN_ON(); //
-                delay_ms(1000); // 等待电平稳定
+                delay_ms(4000); // 等待电平稳定
                 flag_is_detecting_load = 1;
                 cnt = 0;
                 while (flag_is_detecting_load)
@@ -658,14 +660,14 @@ void main(void)
                 cnt++;
             }
 
-            DEBUG_PIN = ~DEBUG_PIN; // 目前循环一次约75ms
+            // DEBUG_PIN = ~DEBUG_PIN; // 目前循环一次约75ms
 
             if (cnt >= 50)
             {
                 cnt = 0;
                 // 如果确实没有检测到负载 说明已经给主机充满电
                 flag_is_fully_charged = 1;
-                PWM_DISABEL(); // 关闭控制充电的pwm
+                PWM_DISABLE(); // 关闭控制充电的pwm
                 LED_GREEN_ON();
             }
 
@@ -723,7 +725,7 @@ void main(void)
             {
                 // 如果充电座正在被充电，关闭给主机的充电，防止电流过高
                 // LED_GREEN_OFF();
-                // PWM_DISABEL(); // 关闭控制充电的pwm
+                // PWM_DISABLE(); // 关闭控制充电的pwm
                 // LED_RED_ON();
                 stop_charging_the_host();
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
@@ -774,11 +776,11 @@ void main(void)
             cur_dev_status = CUR_STATUS_NONE;
         }
 #endif
-    } // while (1)
 
-    __asm;
-    clrwdt;
-    __endasm;
+        __asm;
+        clrwdt;
+        __endasm;
+    } // while (1)
 }
 /************************************************
 ;  *    @函数名            : interrupt
@@ -867,7 +869,7 @@ void int_isr(void) __interrupt
                 // if (__detecting_load_cnt < 65535)
                 __detecting_load_cnt++;
 
-                if (__detecting_load_cnt >= 7000)
+                if (__detecting_load_cnt >= 4000)
                 {
                     flag_is_detecting_load = 0;
                 }
