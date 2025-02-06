@@ -152,12 +152,17 @@ volatile u8 cur_dev_status;
 // #define ADC_VAL_LOAD_THRESHOLD (1870) // ad值通过测试得出
 
 
-volatile u32 timer3_cnt;             // 测试时使用
-volatile u8 flag_4s;                 // 测试时使用
+// volatile u32 timer3_cnt;             // 测试时使用
+// volatile u8 flag_4s;                 // 测试时使用
 u32 detect_load_cnt;                 // 测试时使用
 u32 undetect_load_cnt;               // 测试时使用
+// 检测条件1--测试可以检测到负载 （充电座不同电压下，都可以检测到负载）
 #define DETECT_LOAD_ADC_VAL (3767)   // 检测到负载时，对应的ad阈值
 #define UNDETECT_LOAD_ADC_VAL (3986) // 未检测到负载时，对应的ad阈值
+
+// 检测条件2--测试可以检测到负载 （充电座不同电压下，都可以检测到负载）
+// #define DETECT_LOAD_ADC_VAL (3882)   // 检测到负载时，对应的ad阈值
+// #define UNDETECT_LOAD_ADC_VAL (3983) // 未检测到负载时，对应的ad阈值
 
 // 定义adc的通道
 enum
@@ -199,7 +204,10 @@ typedef union
 volatile bit_flag flag1;
 #define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在充电时检测到低电量
 #define flag_is_fully_charged flag1.bits.bit1  // 标志位，是否给主机充满电
-#define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载
+// #define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载
+
+#define flag_is_enable_detect_load flag1.bits.bit3 // 标志位，是否使能检测负载的功能
+#define flag_4s flag1.bits.bit4 // 标志位，在检测负载时，是否持续检测了4s
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
