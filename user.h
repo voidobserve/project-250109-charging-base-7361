@@ -117,6 +117,28 @@ enum
 };
 volatile u8 cur_dev_status;
 
+#if 0
+// 低通滤波器系数 alpha = 0.3
+#define FILTER_ALPHA 3
+#define FILTER_SCALE 10
+#endif
+#if 0
+    for (i = 0; i < 100; i++)
+    adc_val = adc_get_val();
+    // 低通滤波计算: Y(n) = α * X(n) + (1-α) * Y(n-1)
+    filter_value = (FILTER_ALPHA * adc_val + (FILTER_SCALE - FILTER_ALPHA) * filter_value) / FILTER_SCALE;
+    adc_val = filter_value;
+
+    if (adc_val > ADC_VAL_LOAD_THRESHOLD)
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+#endif
+
 // ===================================================
 // 充电座检测负载的相关配置                            //
 // ===================================================
@@ -125,7 +147,17 @@ volatile u8 cur_dev_status;
 // #define ADC_VAL_LOAD_THRESHOLD ((2477 + 2129) / 2)// ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD ((1260 + 2463) / 2) // ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD (1400) // ad值通过测试得出
-#define ADC_VAL_LOAD_THRESHOLD (850) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD (850) // ad值通过测试得出
+#define ADC_VAL_LOAD_THRESHOLD (820) // ad值通过测试得出
+// #define ADC_VAL_LOAD_THRESHOLD (1870) // ad值通过测试得出
+
+
+volatile u32 timer3_cnt;             // 测试时使用
+volatile u8 flag_4s;                 // 测试时使用
+u32 detect_load_cnt;                 // 测试时使用
+u32 undetect_load_cnt;               // 测试时使用
+#define DETECT_LOAD_ADC_VAL (3767)   // 检测到负载时，对应的ad阈值
+#define UNDETECT_LOAD_ADC_VAL (3986) // 未检测到负载时，对应的ad阈值
 
 // 定义adc的通道
 enum
@@ -165,11 +197,9 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-#define flag_is_low_bat flag1.bits.bit0       // 标志位，是否在充电时检测到低电量
-#define flag_is_fully_charged flag1.bits.bit1 // 标志位，是否给主机充满电
-
+#define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在充电时检测到低电量
+#define flag_is_fully_charged flag1.bits.bit1  // 标志位，是否给主机充满电
 #define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载
-// #define flag_is_
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4

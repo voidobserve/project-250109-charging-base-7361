@@ -83,17 +83,56 @@ void adc_config(void)
 }
 
 // 控制充电的pwm
-// 250KHz：
+
 void timer0_pwm_config(void)
 {
+    // T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+// T0CNT = 50 - 1;
+#if 0
+    // 250KHz：
     T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
-    // T0CNT = 50 - 1;
     // 理论上重装载值应该是128，但是时钟是RC振荡得来的，不准确，需要加上补偿
     T0LOAD = (128 + 10) - 1; //
     // T0DATA = 23 + 10;
-    // T0DATA = 59 + 10;
-    T0DATA = 49 + 10;
+    T0DATA = 59 + 10;
+    // T0DATA = 45 + 10;
+#endif
 
+#if 1
+    T0CR = 0x49;  // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 143; // 222，有时是224KHz
+    // T0LOAD = 144;  // 220-222KHz
+    // T0LOAD = 146;  // 218KHz
+    T0DATA = 15;
+#endif
+
+#if 0
+    // 214-216KHz ， 10%
+    T0CR = 0x49;  // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 148; //
+    T0DATA = 15;
+#endif
+
+#if 0
+    // 186KHz
+    T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 184; //
+    T0DATA = 74;
+#endif
+
+#if 0
+    // 135KHz
+    T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 255 - 1; //
+    T0DATA = 127;
+#endif
+
+#if 0
+    // 125KHz
+    T0CR = 0x4A;  // 使能PWM,FTMR,4分频 (约每0.06250us计数一次)
+    T0LOAD = 137; //
+    T0DATA = 14;
+#endif
 
     PWMCR0 = 0x00; // 正向输出
     PWMCR1 = 0x18; // 时钟源FHOSC × 2  普通模式
@@ -159,6 +198,9 @@ void adc_sel_channel(u8 adc_channel)
         ADCHS2 = 0;
         ADCHS1 = 0;
         ADCHS0 = 1;
+
+        // 测试用:
+        ADCR1 = 0x83; // adc转换时钟选择 FHIRC/32，使用VDD作为参考电压
 #endif
         break;
 
@@ -403,8 +445,12 @@ u8 is_open_lid(void)
 u8 is_detect_load(void)
 {
     u16 max_adc_val = 0;
+    // static u16 filter_value = 0;
     u8 i = 0;
+    // u8 cnt = 0;
+
     adc_sel_channel(ADC_CHANNEL_LOAD);
+
     for (i = 0; i < 100; i++)
     {
         // adc_val = adc_get_max_val(); // 用这个函数会采集到4095
@@ -436,7 +482,8 @@ void stop_charging_the_host(void)
 
 void low_power_scan_handle(void)
 {
-    if (CUR_STATUS_NONE == cur_dev_status || CUR_STATUS_POWER_OFF == cur_dev_status)
+    if (CUR_STATUS_NONE == cur_dev_status ||
+        CUR_STATUS_POWER_OFF == cur_dev_status)
     {
     low_power_label:
         // 进入低功耗
@@ -462,6 +509,12 @@ void low_power_scan_handle(void)
         P15OE = 0; // 输入模式
         P15DC = 0; // 数字模式
 #endif
+
+        // adc通道选择一个不是 1/4 VDD的
+        ADCHS3 = 0;
+        ADCHS2 = 0;
+        ADCHS1 = 0;
+        ADCHS0 = 0;
         ADEN = 0;
         // 检测充电的引脚和检测霍尔的引脚配置为键盘中断触发
         P13KE = 1;
@@ -473,9 +526,9 @@ void low_power_scan_handle(void)
 #endif
         KBIF = 0;
         KBIE = 1;
-        // LVDEN = 0; // 是否关闭LVD都不影响待机电流
-        HFEN = 0; // 关闭高速时钟
-        LFEN = 0; // 关闭低速时钟
+        LVDEN = 0; // 是否关闭LVD都不影响待机电流
+        HFEN = 0;  // 关闭高速时钟
+        LFEN = 0;  // 关闭低速时钟
         // 休眠前注意关闭不用的外设
         Nop();
         Nop();
@@ -483,7 +536,7 @@ void low_power_scan_handle(void)
         Nop();
         Nop();
         HFEN = 1; // 开启高速时钟
-                  // LVDEN = 1;
+        LVDEN = 1;
 #if USE_MY_DEBUG
         P03KE = 0;
 #else
@@ -493,23 +546,17 @@ void low_power_scan_handle(void)
         KBIE = 0;
         KBIF = 0;
 
-        // // 检测电池电压是否小于3.0V或未进行充电
-        // if (CHARGE_PIN)
-        // {
-        //     // 如果检测到充电，什么也不做
-        //     // DEBUG_PIN = 1;
-        // }
-        // else
-        // {
-        //     // 如果没有检测到充电，检测电池电量是否大于3.0V，才允许开机
-        //     // adc_config();
-        //     // adc_sel_channel(ADC_CHANNEL_BAT);
-        //     // adc_val = adc_get_val();
-        //     // if (adc_val < 1485) // 如果检测到电池电压小于2.9V
-        //     // {
-        //     //     // goto low_power_label;  // 这里会导致无法从正常的电压下启动
-        //     // }
-        // }
+        // 判断是否是霍尔或者充电唤醒，如果不是，回到低功耗
+        if (CHARGE_PIN || 0 == P13D)
+        {
+            // 如果充电检测引脚是高电平 或者 霍尔检测脚是低电平(关闭了收纳盒)
+            // 退出低功耗
+        }
+        else
+        {
+            // 回到低功耗
+            goto low_power_label;
+        }
 
         // DEBUG_PIN = ~DEBUG_PIN; // 测试是否能唤醒单片机
 
@@ -525,6 +572,7 @@ void low_power_scan_handle(void)
 ;  *    @输入参数          :
 ;  *    @返回参数          :
 ;  ***********************************************/
+
 void main(void)
 {
     Sys_Init();
@@ -535,14 +583,62 @@ void main(void)
     LED_GREEN_OFF();
 
 #if 0
-    // flag_is_low_bat = 1; // 测试时使用 
-    LED_GREEN_ON();
-    PWM_ENABLE(); 
+    // flag_is_low_bat = 1; // 测试时使用
+    // LED_GREEN_ON();
+    PWM_ENABLE();
     T3EN = 0;
+
+    delay_ms(4000); // 等待检测负载的电流稳定
+    T3EN = 1;       // 测试时使用
 #endif
 
     while (1)
     {
+
+#if 0 // 测试 能否检测到负载
+
+        adc_sel_channel(ADC_CHANNEL_LOAD);
+        adc_val = adc_get_val();
+
+        if (adc_val < DETECT_LOAD_ADC_VAL)
+        {
+            detect_load_cnt++;
+        }
+        else if (adc_val > UNDETECT_LOAD_ADC_VAL)
+        {
+            undetect_load_cnt++;
+        }
+
+        if (flag_4s)
+        {
+            flag_4s = 0;
+            timer3_cnt = 0;
+
+            if (detect_load_cnt > undetect_load_cnt)
+            {
+                // 如果进入到这里，说明可能有负载
+                if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
+                {
+                    // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
+                    LED_GREEN_ON();
+                }
+            }
+            else
+            {
+                // 如果进入到这里，说明可能断开/没有负载
+                if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
+                {
+                    // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
+                    LED_GREEN_OFF();
+                }
+            }
+
+            detect_load_cnt = 0;
+            undetect_load_cnt = 0;
+        }
+
+#endif
+
 #if 0 // 测试在无线充电时，充电座检测到的ad值
         adc_sel_channel(ADC_CHANNEL_LOAD);
         for (i = 0; i < 100; i++)
@@ -557,16 +653,16 @@ void main(void)
         }
 #endif
 
-#if 0
-        // ret_u8 = is_open_lid();
-        // if (ret_u8)
-        // {
-        //     LED_GREEN_ON();
-        // }
-        // else
-        // {
-        //     LED_GREEN_OFF();
-        // }
+#if 0 // 测试封装后的检测负载函数和检测保护盖开启/关闭函数
+      // ret_u8 = is_open_lid();
+      // if (ret_u8)
+      // {
+      //     LED_GREEN_ON();
+      // }
+      // else
+      // {
+      //     LED_GREEN_OFF();
+      // }
 
         ret_u8 = is_detect_load();
         if (ret_u8)
@@ -585,6 +681,17 @@ void main(void)
             // 如果当前设备没有任何操作，检测是否有
             // 是否盖上盖子，
             // 是否在被充电 ，外部5V输入
+            ret_u8 = is_in_charging();
+            if (ret_u8)
+            {
+                // 如果充电座正在被充电，关闭给主机的充电
+                stop_charging_the_host();
+
+                LED_RED_ON();
+                cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                continue;                                //
+            }
+
             ret_u8 = is_open_lid();
             if (0 == ret_u8)
             {
@@ -626,16 +733,6 @@ void main(void)
                     // 没有负载
                     stop_charging_the_host();
                 }
-            }
-
-            ret_u8 = is_in_charging();
-            if (ret_u8)
-            {
-                // 如果充电座正在被充电，关闭给主机的充电
-                stop_charging_the_host();
-
-                LED_RED_ON();
-                cur_dev_status = CUR_STATUS_BE_CHARGING; //
             }
 
             // 如果执行到这里还是没有改变状态，进入低功耗
@@ -689,7 +786,8 @@ void main(void)
             adc_sel_channel(ADC_CHANNEL_BAT);
             adc_val = adc_get_val();
             // if (adc_val < 1485 - AD_OFFSET) // 2.9V
-            if (adc_val < 1587 - AD_OFFSET) // 3.1V
+            // if (adc_val < 1587 - AD_OFFSET) // 3.1V
+            if (adc_val < 1587) // 3.1V
             {
                 // 如果检测到电池电电量小于 xx V
                 // 断开充电：
@@ -698,14 +796,15 @@ void main(void)
                 flag_is_fully_charged = 0;
                 stop_charging_the_host();
             }
-            else if (adc_val < 1638 - AD_OFFSET) // 如果充电座的电池电量小于3.2V
+            // else if (adc_val < 1638 - AD_OFFSET) // 如果充电座的电池电量小于3.2V
+            else if (adc_val < 1638) // 如果充电座的电池电量小于3.2V
             {
                 //
                 flag_is_low_bat = 1;
                 flag_is_fully_charged = 0;
                 LED_GREEN_OFF(); // 关掉绿灯，让红灯慢闪
             }
-            else
+            else if (adc_val > 1638 + AD_OFFSET) // 注意这一条件要与 (充电座的电池电量小于3.2V) 的条件相隔一个ad值死区
             {
                 flag_is_low_bat = 0;
                 // 如果不小于3.2V，重新点亮绿灯
@@ -804,6 +903,13 @@ void int_isr(void) __interrupt
     if (T3IF & T3IE)
     {
         // 目前每1ms进入一次中断
+        timer3_cnt++;
+        if (timer3_cnt >= 4000)
+        {
+            flag_4s = 1;
+        }
+
+#if 0
         static u16 blink_cnt = 0;
         if (CUR_STATUS_IN_CHARGING == cur_dev_status && flag_is_low_bat)
         {
@@ -811,11 +917,11 @@ void int_isr(void) __interrupt
             if (blink_cnt < 65535)
                 blink_cnt++;
 
-            if (blink_cnt <= 400)
+            if (blink_cnt <= 350)
             {
                 LED_RED_ON();
             }
-            else if (blink_cnt <= 800)
+            else if (blink_cnt <= 700)
             {
                 LED_RED_OFF();
             }
@@ -879,6 +985,7 @@ void int_isr(void) __interrupt
                 __detecting_load_cnt = 0;
             }
         }
+#endif
 
         T3IF = 0;
     }
