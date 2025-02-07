@@ -202,12 +202,17 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
-#define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在充电时检测到低电量
+#define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在给主机充电时检测到低电量
 #define flag_is_fully_charged flag1.bits.bit1  // 标志位，是否给主机充满电
-// #define flag_is_detecting_load flag1.bits.bit2 // 标志位，是否正在检测负载
+
 
 #define flag_is_enable_detect_load flag1.bits.bit3 // 标志位，是否使能检测负载的功能
 #define flag_4s flag1.bits.bit4 // 标志位，在检测负载时，是否持续检测了4s
+
+#define flag_is_open_lid flag1.bits.bit5 // 标志位，表示是否打开了收纳盒,0--未打开，1--打开
+#define flag_bat_is_fully_charged flag1.bits.bit6 // 标志位，表示充电座的电池是否被充满电
+
+#define flag_is_detect_load_when_charged flag1.bits.bit7 // 标志位，是否在被充电时检测到了负载
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
