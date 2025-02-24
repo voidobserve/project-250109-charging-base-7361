@@ -99,14 +99,20 @@ void timer0_pwm_config(void)
 #endif
 
 #if 1
-    T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    // T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
     // T0LOAD = 135; // 235.2KHz
     // T0LOAD = 143; // 222，有时是224KHz
     // T0LOAD = 144;  // 220-222KHz
     // T0LOAD = 146;  // 218KHz
     // T0LOAD = 154; // 206.8KHz
-    T0LOAD = 158; // 201.6KHz
-    T0DATA = 22;
+    // T0LOAD = 158; // 201.6KHz
+    // T0LOAD = 94; // 在358 - 363 KHz
+    // T0DATA = 14;
+
+    T0CR = (0x01 << 6) | (0x01 << 3); // 使能PWM,FTMR,不分频 (约每0.000000015625us计数一次，实际的肯定会与计算的有误差，需要加上补偿)
+    // T0LOAD = 188; // 363 ~ 369 KHz
+    T0LOAD = 190; // 平均值约为360.7KHz
+    T0DATA = 28;
 #endif
 
 #if 0
@@ -617,8 +623,8 @@ void main(void)
     PWM_ENABLE();
     T3EN = 0;
 
-    delay_ms(4000); // 等待检测负载的电流稳定
-    T3EN = 1;       // 测试时使用
+    // delay_ms(4000); // 等待检测负载的电流稳定
+    // T3EN = 1;       // 测试时使用
 #endif
 
     while (1)
@@ -769,8 +775,13 @@ void main(void)
                 // 如果确实没有检测到负载 说明已经给主机充满电
                 flag_is_fully_charged = 1;
                 PWM_DISABLE();  // 关闭控制充电的pwm
-                LED_GREEN_ON(); // 重新点亮绿灯，防止绿灯在闪烁时刚好进入的熄灭的状态
+                // LED_GREEN_ON(); // 重新点亮绿灯，防止绿灯在闪烁时刚好进入的熄灭的状态
+
+                
                 /* 如果没有打开盖子/插入充电器，绿灯会一直常亮 */
+
+                // 现在改成充满电，熄灭绿灯
+                LED_GREEN_OFF(); // 熄灭绿灯
             }
             else if (2 == ret_u8)
             {
