@@ -151,11 +151,10 @@ volatile u8 cur_dev_status;
 #define ADC_VAL_LOAD_THRESHOLD (820) // ad值通过测试得出
 // #define ADC_VAL_LOAD_THRESHOLD (1870) // ad值通过测试得出
 
-
 // volatile u32 timer3_cnt;             // 测试时使用
 // volatile u8 flag_4s;                 // 测试时使用
-u32 detect_load_cnt;                 // 测试时使用
-u32 undetect_load_cnt;               // 测试时使用
+volatile u32 detect_load_cnt;                 // 测试时使用
+volatile u32 undetect_load_cnt;               // 测试时使用
 // 检测条件1--测试可以检测到负载 （充电座不同电压下，都可以检测到负载）
 // #define DETECT_LOAD_ADC_VAL (3767)   // 检测到负载时，对应的ad阈值
 // #define UNDETECT_LOAD_ADC_VAL (3986) // 未检测到负载时，对应的ad阈值
@@ -235,7 +234,7 @@ void delay_ms(u16 xms)
 
 // #if USE_MY_DEBUG
 #define DEBUG_PIN P22D
-#if 1 // 以下程序约占用81字节空间
+#if 0 // 以下程序约占用81字节空间
 // 通过一个引脚输出数据(发送一次约400ms)
 // #define DEBUG_PIN P22D
 void send_data_msb(u32 send_data)

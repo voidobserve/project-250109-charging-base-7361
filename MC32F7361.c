@@ -99,7 +99,8 @@ void timer0_pwm_config(void)
 #endif
 
 #if 1
-    // T0CR = 0x49; // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0CR = 0x49;  // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 118; // 271KHz
     // T0LOAD = 135; // 235.2KHz
     // T0LOAD = 143; // 222，有时是224KHz
     // T0LOAD = 144;  // 220-222KHz
@@ -107,12 +108,12 @@ void timer0_pwm_config(void)
     // T0LOAD = 154; // 206.8KHz
     // T0LOAD = 158; // 201.6KHz
     // T0LOAD = 94; // 在358 - 363 KHz
-    // T0DATA = 14;
+    T0DATA = 41;
 
-    T0CR = (0x01 << 6) | (0x01 << 3); // 使能PWM,FTMR,不分频 (约每0.000000015625us计数一次，实际的肯定会与计算的有误差，需要加上补偿)
-    // T0LOAD = 188; // 363 ~ 369 KHz
-    T0LOAD = 190; // 平均值约为360.7KHz
-    T0DATA = 28;
+    // T0CR = (0x01 << 6) | (0x01 << 3); // 使能PWM,FTMR,不分频 (约每0.000000015625us计数一次，实际的肯定会与计算的有误差，需要加上补偿)
+    // // T0LOAD = 188; // 363 ~ 369 KHz
+    // T0LOAD = 190; // 平均值约为360.7KHz
+    // T0DATA = 28;
 #endif
 
 #if 0
@@ -150,6 +151,31 @@ void timer0_pwm_config(void)
     // T0EN = 1;
     T0EN = 0;   // 关闭定时器
     PWM0EC = 0; // 不使能PWM0输出
+}
+
+void set_timer0_pwm_when_detecting(void)
+{
+    T0EN = 0;     // 关闭定时器
+    PWM0EC = 0;   // 不使能PWM0输出
+    T0CR = 0x49;  // 使能PWM,FTMR,2分频 (约每0.03125us计数一次)
+    T0LOAD = 114; // 约282KHz
+    T0DATA = 17;
+    T0EN = 1;   // 使能定时器
+    PWM0EC = 1; // 使能PWM0输出
+    delay_ms(1);
+}
+
+void set_timer0_pwm_when_charging(void)
+{
+    T0EN = 0;                         // 关闭定时器
+    PWM0EC = 0;                       // 不使能PWM0输出
+    T0CR = (0x01 << 6) | (0x01 << 3); // 使能PWM,FTMR,不分频 (约每0.000000015625us计数一次，实际的肯定会与计算的有误差，需要加上补偿)
+    // T0LOAD = 190;                     // 平均值约为360.7KHz(实际只有333K~334K)
+    T0LOAD = 177; //
+    T0DATA = 41;
+    T0EN = 1;   // 使能定时器
+    PWM0EC = 1; // 使能PWM0输出
+    delay_ms(1);
 }
 
 // 定时器3
@@ -481,6 +507,7 @@ u8 is_detect_load(void)
     {
         flag_4s = 0;
         flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
+        delay_ms(1);
 
         if (detect_load_cnt > undetect_load_cnt)
         {
@@ -594,10 +621,9 @@ void low_power_scan_handle(void)
         }
 
         // DEBUG_PIN = ~DEBUG_PIN; // 测试是否能唤醒单片机
-
-        Sys_Init();
-        delay_ms(1);
         GIE = 1;
+        Sys_Init();
+        delay_ms(1); 
     }
 }
 
@@ -710,6 +736,7 @@ void main(void)
                 // 如果设备可以开机，检测有没有负载，如果没有负载 -> 关机
                 // 如果给负载充满电 -> 关机
 
+                set_timer0_pwm_when_detecting();
                 // 打开充电
                 PWM_ENABLE();
                 LED_GREEN_ON(); //
@@ -723,30 +750,80 @@ void main(void)
                             stop_charging_the_host(); // 关闭pwm，关闭绿灯
                             break;
                         }
+
+                        delay_ms(1);
                     }
                 }
 
+                // flag_is_enable_detect_load = 0;
+                // delay_ms(1);
+                adc_sel_channel(ADC_CHANNEL_LOAD);
+                detect_load_cnt = 0;
+                undetect_load_cnt = 0;
+
                 while (1) // 连续检测4s，判断有没有负载
                 {
-                    ret_u8 = is_detect_load();
-                    if (1 == ret_u8)
+                    static volatile u16 __detect_ms_cnt = 0;
+                    adc_val = adc_get_val();
+
+                    if (adc_val < DETECT_LOAD_ADC_VAL)
                     {
-                        // 如果检测到有负载:
-                        cur_dev_status = CUR_STATUS_IN_CHARGING;
-                        break;
+                        detect_load_cnt++;
                     }
-                    else if (0 == ret_u8)
+                    else if (adc_val > UNDETECT_LOAD_ADC_VAL)
                     {
-                        // 如果检测到 没有负载
-                        stop_charging_the_host(); // 关闭pwm，关闭绿灯
+                        undetect_load_cnt++;
+                    }
+
+                    delay_ms(1);
+                    __detect_ms_cnt++;
+
+                    if (__detect_ms_cnt >= 4000)
+                    {
+                        __detect_ms_cnt = 0;
+
+                        if (detect_load_cnt > undetect_load_cnt)
+                        {
+                            // 如果进入到这里，说明可能有负载
+                            if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
+                            {
+                                // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
+                                // 如果检测到有负载:
+                                // detect_load_cnt = 0;
+                                // undetect_load_cnt = 0;
+                                cur_dev_status = CUR_STATUS_IN_CHARGING;
+                                set_timer0_pwm_when_charging();
+                                // break;
+                            }
+                        }
+                        else
+                        {
+                            // 如果进入到这里，说明可能断开/没有负载
+                            if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
+                            {
+                                // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
+                                // 如果检测到 没有负载
+                                // detect_load_cnt = 0;
+                                // undetect_load_cnt = 0;
+                                stop_charging_the_host(); // 关闭pwm，关闭绿灯
+                                // break;
+                            }
+                        }
+
+                        detect_load_cnt = 0;
+                        undetect_load_cnt = 0;
                         break;
                     }
 
                     if (1 == is_open_lid())
                     {
                         // 如果打开了收纳盒，退出
-                        flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
-                        stop_charging_the_host();       // 关闭pwm，关闭绿灯
+                        detect_load_cnt = 0;
+                        undetect_load_cnt = 0;
+                        __detect_ms_cnt = 0;
+                        // flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
+                        // delay_ms(1);
+                        stop_charging_the_host(); // 关闭pwm，关闭绿灯
                         break;
                     }
                 } // while (1) // 连续检测4s，判断有没有负载
@@ -774,10 +851,9 @@ void main(void)
             {
                 // 如果确实没有检测到负载 说明已经给主机充满电
                 flag_is_fully_charged = 1;
-                PWM_DISABLE();  // 关闭控制充电的pwm
+                PWM_DISABLE(); // 关闭控制充电的pwm
                 // LED_GREEN_ON(); // 重新点亮绿灯，防止绿灯在闪烁时刚好进入的熄灭的状态
 
-                
                 /* 如果没有打开盖子/插入充电器，绿灯会一直常亮 */
 
                 // 现在改成充满电，熄灭绿灯
@@ -796,8 +872,9 @@ void main(void)
                 flag_is_low_bat = 0; // 不给主机充电时，清空该标志位
                 flag_is_fully_charged = 0;
                 flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
-                stop_charging_the_host();       // 关闭PWM、关闭绿灯
-                continue;                       // 跳过当前循环
+                delay_ms(1);
+                stop_charging_the_host(); // 关闭PWM、关闭绿灯
+                continue;                 // 跳过当前循环
             }
 
             // 低电量和低电量关机检测：
@@ -812,6 +889,7 @@ void main(void)
                 cur_dev_status = CUR_STATUS_POWER_OFF;
                 flag_is_fully_charged = 0;
                 flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
+                delay_ms(1);
                 stop_charging_the_host();
                 continue;
             }
@@ -849,7 +927,8 @@ void main(void)
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
                 flag_is_low_bat = 0;                     // 充电座被充电时，清除该标志位
                 flag_is_enable_detect_load = 0;          // 清零该标志位，关闭对应的定时器计时功能
-                LED_GREEN_OFF();                         // 等待状态和标志位更新完成，再关闭绿灯
+                delay_ms(1);
+                LED_GREEN_OFF(); // 等待状态和标志位更新完成，再关闭绿灯
                 continue;
             }
         } // else if (CUR_STATUS_IN_CHARGING == cur_dev_status) // 当前正在给主机充电
@@ -886,8 +965,9 @@ void main(void)
                 // 如果检测到打开了盖子
                 __flag_detect_load_status = 0;
                 flag_is_enable_detect_load = 0; // 不使能检测负载的定时器计时
+                delay_ms(1);
                 flag_is_detect_load_when_charged = 0;
-                stop_charging_the_host();       // 关闭PWM
+                stop_charging_the_host(); // 关闭PWM
             }
             else
             {
@@ -896,6 +976,7 @@ void main(void)
                 {
                     // 如果还未检测过是否有负载
                     __flag_detect_load_status = 1; // 表示正在检测是否有负载
+                    set_timer0_pwm_when_detecting();
                     PWM_ENABLE();
                     LED_GREEN_ON();
                     // delay_ms(4000); // -- 这期间可以检测有没有打开保护盖
@@ -910,6 +991,8 @@ void main(void)
                                 stop_charging_the_host(); // 关闭pwm，关闭绿灯
                                 break;
                             }
+
+                            delay_ms(1);
                         }
                     }
                 }
@@ -928,6 +1011,11 @@ void main(void)
                     else if (1 == ret_u8)
                     {
                         // 如果还未断开负载
+                        if (1 == __flag_detect_load_status)
+                        {
+                            set_timer0_pwm_when_charging();
+                        }
+
                         __flag_detect_load_status = 3;
                         flag_is_detect_load_when_charged = 1;
                     }
