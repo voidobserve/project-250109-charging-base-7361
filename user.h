@@ -163,6 +163,10 @@ volatile u32 undetect_load_cnt;               // 测试时使用
 #define DETECT_LOAD_ADC_VAL (3882)   // 检测到负载时，对应的ad阈值
 #define UNDETECT_LOAD_ADC_VAL (3983) // 未检测到负载时，对应的ad阈值
 
+// 被充电时，在200多K的PWM下，检测负载的阈值：
+#define DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3680)
+#define UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3820)
+
 // 定义adc的通道
 enum
 {
@@ -203,14 +207,11 @@ typedef union
 volatile bit_flag flag1;
 #define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在给主机充电时检测到低电量
 #define flag_is_fully_charged flag1.bits.bit1  // 标志位，是否给主机充满电
-
-
+// #define flag_tim_scan_when_detect_load flag1.bits.bit2 // 在检测负载期间，用于给定时器扫描的标志位
 #define flag_is_enable_detect_load flag1.bits.bit3 // 标志位，是否使能检测负载的功能
 #define flag_4s flag1.bits.bit4 // 标志位，在检测负载时，是否持续检测了4s
-
 #define flag_is_open_lid flag1.bits.bit5 // 标志位，表示是否打开了收纳盒,0--未打开，1--打开
 #define flag_bat_is_fully_charged flag1.bits.bit6 // 标志位，表示充电座的电池是否被充满电
-
 #define flag_is_detect_load_when_charged flag1.bits.bit7 // 标志位，是否在被充电时检测到了负载
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
