@@ -509,7 +509,7 @@ u8 is_detect_load(void)
         // 初始化变量和标志位
         detect_load_cnt = 0;
         undetect_load_cnt = 0;
-        flag_4s = 0;
+        flag_tim_set_scan_time_is_arrive = 0;
         flag_is_enable_detect_load = 1; // 使能该标志位，利用定时器开始计时
     }
 
@@ -554,9 +554,9 @@ u8 is_detect_load(void)
         return 0;
     }
 
-    if (flag_4s)
+    if (flag_tim_set_scan_time_is_arrive)
     {
-        flag_4s = 0;
+        flag_tim_set_scan_time_is_arrive = 0;
         flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
         delay_ms(1);
 
@@ -572,11 +572,14 @@ u8 is_detect_load(void)
         else
         {
             // 如果进入到这里，说明可能断开/没有负载
-            if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
-            {
-                // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
-                ret = 0;
-            }
+            // if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
+            // {
+            //     // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
+            //     ret = 0;
+            // }
+
+            // 直接认为没有负载：
+            ret = 0;
         }
 
         detect_load_cnt = 0;
@@ -713,66 +716,7 @@ void main(void)
 #endif
 
     while (1)
-    {
-
-#if 0 // 测试 能否检测到负载(测试充电座能否检测到负载)
-
-        adc_sel_channel(ADC_CHANNEL_LOAD);
-        adc_val = adc_get_val();
-
-        if (adc_val < DETECT_LOAD_ADC_VAL)
-        {
-            detect_load_cnt++;
-        }
-        else if (adc_val > UNDETECT_LOAD_ADC_VAL)
-        {
-            undetect_load_cnt++;
-        }
-
-        if (flag_4s)
-        {
-            flag_4s = 0;
-            timer3_cnt = 0;
-
-            if (detect_load_cnt > undetect_load_cnt)
-            {
-                // 如果进入到这里，说明可能有负载
-                if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
-                {
-                    // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
-                    LED_GREEN_ON();
-                }
-            }
-            else
-            {
-                // 如果进入到这里，说明可能断开/没有负载
-                if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
-                {
-                    // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
-                    LED_GREEN_OFF();
-                }
-            }
-
-            detect_load_cnt = 0;
-            undetect_load_cnt = 0;
-        }
-
-#endif
-
-#if 0 // 测试在无线充电时，充电座检测到的ad值
-        adc_sel_channel(ADC_CHANNEL_LOAD);
-        for (i = 0; i < 100; i++)
-        {
-            // adc_val = adc_get_max_val(); // 用这个函数会采集到4095
-            adc_val = adc_get_val();
-            // if (adc_val > tmp_val)
-            {
-                tmp_val = adc_val;
-                send_data_msb(tmp_val);
-            }
-        }
-#endif
-
+    {  
 #if 1
         flag_is_open_lid = is_open_lid();
 
@@ -790,6 +734,7 @@ void main(void)
 #endif // 被充电时不给主机充电的版本
 
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                delay_ms(1);
                 continue;                                //
             }
 
@@ -805,7 +750,8 @@ void main(void)
                 // delay_ms(4000); // 等待电平稳定 -- 这期间可以检测有没有打开保护盖
                 {
                     u16 i = 0;
-                    for (i = 0; i < 4000; i++)
+                    // for (i = 0; i < 4000; i++)
+                    for (i = 0; i < 500; i++) // 等待500ms
                     {
                         if (is_open_lid()) // 如果打开了保护盖
                         {
@@ -823,7 +769,7 @@ void main(void)
                 detect_load_cnt = 0;
                 undetect_load_cnt = 0;
 
-                while (1) // 连续检测4s，判断有没有负载
+                while (1) // 连续检测 xx s，判断有没有负载
                 {
                     static volatile u16 __detect_ms_cnt = 0;
                     adc_val = adc_get_val();
@@ -842,7 +788,8 @@ void main(void)
                     delay_ms(1);
                     __detect_ms_cnt++;
 
-                    if (__detect_ms_cnt >= 4000)
+                    // if (__detect_ms_cnt >= 4000)
+                    if (__detect_ms_cnt >= 2500)
                     {
                         __detect_ms_cnt = 0;
 
@@ -946,7 +893,8 @@ void main(void)
             adc_val = adc_get_val();
             // if (adc_val < 1485 - AD_OFFSET) // 2.9V
             // if (adc_val < 1587 - AD_OFFSET) // 3.1V
-            if (adc_val < 1587) // 3.1V
+            // if (adc_val < 1587) // 3.1V
+            if (adc_val < 1536) // 3.0V
             {
                 // 如果检测到电池电电量小于 xx V
                 // 断开充电：
@@ -958,7 +906,8 @@ void main(void)
                 continue;
             }
             // else if (adc_val < 1638 - AD_OFFSET) // 如果充电座的电池电量小于3.2V
-            else if (adc_val < 1638) // 如果充电座的电池电量小于3.2V
+            // else if (adc_val < 1638) // 如果充电座的电池电量小于3.2V
+            else if (adc_val < 1689) // 如果充电座的电池电量小于3.3V
             {
                 //
                 LED_GREEN_OFF(); // 关掉绿灯，让红灯慢闪
@@ -966,7 +915,8 @@ void main(void)
                 flag_is_low_bat = 1;
                 // flag_is_fully_charged = 0;
             }
-            else if (adc_val > 1638 + AD_OFFSET) // 注意这一条件要与 (充电座的电池电量小于3.2V) 的条件相隔一个ad值死区
+            // else if (adc_val > 1638 + AD_OFFSET) // 注意这一条件要与 (充电座的电池电量小于3.2V) 的条件相隔一个ad值死区
+            else if (adc_val > 1689 + AD_OFFSET) // 注意这一条件要与 (充电座的电池电量小于3.3V) 的条件相隔一个ad值死区
             {
                 flag_is_low_bat = 0;
                 delay_ms(1); // 等待定时器关闭红灯
@@ -1090,7 +1040,8 @@ void main(void)
                     // delay_ms(4000); // -- 这期间可以检测有没有打开保护盖
                     {
                         u16 i = 0;
-                        for (i = 0; i < 4000; i++)
+                        // for (i = 0; i < 4000; i++)
+                        for (i = 0; i < 500; i++)
                         {
                             if (is_open_lid()) // 如果打开了保护盖
                             {
@@ -1178,7 +1129,7 @@ void int_isr(void) __interrupt
         //     if (timer3_cnt >= 4000)
         //     {
         //         timer3_cnt = 0;
-        //         flag_4s = 1;
+        //         flag_tim_set_scan_time_is_arrive = 1;
         //     }
         // }
 
@@ -1187,10 +1138,11 @@ void int_isr(void) __interrupt
             if (flag_is_enable_detect_load)
             {
                 detect_load_cnt_ms++;
-                if (detect_load_cnt_ms >= 4000)
+                // if (detect_load_cnt_ms >= 4000)
+                if (detect_load_cnt_ms >= 2500)
                 {
                     detect_load_cnt_ms = 0;
-                    flag_4s = 1;
+                    flag_tim_set_scan_time_is_arrive = 1;
                 }
             }
             else
@@ -1211,11 +1163,13 @@ void int_isr(void) __interrupt
                 if (blink_cnt < 65535)
                     blink_cnt++;
 
-                if (blink_cnt <= 350)
+                // if (blink_cnt <= 350)
+                if (blink_cnt <= 1000)
                 {
                     LED_RED_ON();
                 }
-                else if (blink_cnt <= 700)
+                // else if (blink_cnt <= 700)
+                else if (blink_cnt <= 2000)
                 {
                     LED_RED_OFF();
                 }
