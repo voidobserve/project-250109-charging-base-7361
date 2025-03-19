@@ -162,13 +162,11 @@ volatile u32 undetect_load_cnt;               // 测试时使用
 // 检测条件2--测试可以检测到负载 （充电座不同电压下，都可以检测到负载）
 // #define DETECT_LOAD_ADC_VAL (3882)   // 检测到负载时，对应的ad阈值
 // #define UNDETECT_LOAD_ADC_VAL (3983) // 未检测到负载时，对应的ad阈值
-
-#define DETECT_LOAD_ADC_VAL (3753)   // 检测到负载时，对应的ad阈值
-#define UNDETECT_LOAD_ADC_VAL (3786) // 未检测到负载时，对应的ad阈值
+ 
 
 // 被充电时，在200多K的PWM下，检测负载的阈值：
-#define DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3680)
-#define UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3820)
+#define DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3545)
+#define UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3773)
 
 // 定义adc的通道
 enum
