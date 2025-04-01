@@ -46,6 +46,9 @@
 #define PASS 0
 
 #define USE_MY_DEBUG 0
+
+
+
 #define AD_OFFSET 41 // 检测到的ad值与实际的电压值有偏差，要减去这个值
 // ===================================================
 // 充电座的LED                                      //
@@ -168,6 +171,10 @@ volatile u32 undetect_load_cnt;               // 测试时使用
 #define DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3545)
 #define UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING (3773)
 
+// #define CHARGING_CURRENT_ADC_VAL (50) // 在检测负载时使用到的比较值(实际测试，它在一直发射，没有检测到负载断开)
+// #define CHARGING_CURRENT_ADC_VAL (150) // 在检测负载时使用到的比较值(实际测试发现，主机充满电断开后，仍认为有负载)
+#define CHARGING_CURRENT_ADC_VAL (200) // 在检测负载时使用到的比较值(实际测试 )
+
 // 定义adc的通道
 enum
 {
@@ -185,7 +192,8 @@ volatile u8 i;   // 循环计数值
 volatile u8 cnt; // 循环中使用到的事件计数
 volatile u8 ret_u8;
 volatile u16 adc_val;
-volatile u16 tmp_val;
+
+volatile u16 bat_adc_val;
 
 // volatile u16 max_adc_val; // 检测负载时，用于存放一段时间内检测到的最大的ad值
 
@@ -215,6 +223,8 @@ volatile bit_flag flag1;
 #define flag_is_open_lid flag1.bits.bit5 // 标志位，表示是否打开了收纳盒,0--未打开，1--打开
 #define flag_bat_is_fully_charged flag1.bits.bit6 // 标志位，表示充电座的电池是否被充满电
 #define flag_is_detect_load_when_charged flag1.bits.bit7 // 标志位，是否在被充电时检测到了负载
+
+#define flag_is_being_charged flag1.bits.bit2 // 标志位，是否正在被充电
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4

@@ -362,7 +362,15 @@ void Sys_Init(void)
     GIE = 1;
 }
 
-// 充电检测
+#if 0  // 充电检测
+/**
+ * @brief 充电检测
+ *
+ * @return * u8
+ *              0 -- 未在充电
+ *              1 -- 正在充电
+ *              2 -- 还在检测是否有充电（还未添加该项）
+ */
 u8 is_in_charging(void)
 {
     static u8 last_status = 0;
@@ -427,7 +435,9 @@ u8 is_in_charging(void)
 
     return ret;
 }
+#endif // 充电检测
 
+#if 0  // 是否打开保护盖
 u8 is_open_lid(void)
 {
     static u8 last_status = 0;
@@ -490,19 +500,16 @@ u8 is_open_lid(void)
 
     return ret;
 }
+#endif // 是否打开保护盖
 
 // 是否检测到负载
 // 返回值 0--没有负载  1--有负载 2--还在检测中
 u8 is_detect_load(void)
 {
     u8 ret = 2; // 表示还在检测中
-
-    // 记录上一次检测到的负载的状态
-    // 0--初始值，没有负载
-    // 1--有负载
-    // static u8 last_status;
-    // // 记录 检测到负载变为检测不到负载 或是 检测不到负载变为检测到负载 的计数，类似双边沿计数
-    // static u8 pulse_cnt;
+    volatile u32 tmp_u32 = bat_adc_val;
+    tmp_u32 = tmp_u32 * 2000 * 4 / 4096;
+    volatile u32 cmp_val = (tmp_u32 - CHARGING_CURRENT_ADC_VAL) * 4096 / tmp_u32;
 
     if (0 == flag_is_enable_detect_load)
     {
@@ -517,56 +524,37 @@ u8 is_detect_load(void)
     adc_sel_channel(ADC_CHANNEL_LOAD);
     adc_val = adc_get_val();
 
-    // if ((114 != T0LOAD && adc_val < DETECT_LOAD_ADC_VAL) ||
-    //     (cur_dev_status == CUR_STATUS_BE_CHARGING && adc_val < DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING && 114 == T0LOAD) /* 正在被充电，且使用200多K的PWM时 */
-    // )
     if (
-        (cur_dev_status == CUR_STATUS_BE_CHARGING && 114 == T0LOAD && adc_val < DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING) || /* 充电座正在被充电，且使用282KHz的PWM检测负载 */
-        (cur_dev_status == CUR_STATUS_BE_CHARGING && 114 != T0LOAD && adc_val < 3725) ||                                 /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
-        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val < 3712)                                                     /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val < 3767) /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-        (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val < 3882) /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-    )
+#if 0
+        (flag_is_being_charged && 114 == T0LOAD && adc_val < DETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING) || /* 充电座正在被充电，且使用282KHz的PWM检测负载 */
+        // (flag_is_being_charged && 114 != T0LOAD && adc_val < 3725) ||                                 /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
+        (flag_is_being_charged && 114 != T0LOAD && adc_val < cmp_val) ||                                 /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
+        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val < 3882) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val < 3700) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+        (0 == flag_is_being_charged && 114 == T0LOAD && adc_val < 3649) || /* 充电座未被充电，且使用 282KHz 的PWM检测负载是否断开 */
+        (0 == flag_is_being_charged && 114 != T0LOAD && adc_val < cmp_val) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+#endif
+
+        adc_val < cmp_val)
     {
         detect_load_cnt++;
-
-        // if (last_status == 0) // 如果之前是检测不到负载的状态
-        // {
-        //     last_status = 1; // 更新状态
-        //     pulse_cnt++;
-        // }
     }
-    // else if ((114 != T0LOAD && adc_val > UNDETECT_LOAD_ADC_VAL) ||
-    //          (cur_dev_status == CUR_STATUS_BE_CHARGING && adc_val > UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING && 114 == T0LOAD) /* 正在被充电，且使用200多K的PWM时 */
     else if (
-        (cur_dev_status == CUR_STATUS_BE_CHARGING && 114 == T0LOAD && adc_val > UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING) || /* 充电座正在被充电，且使用282KHz的PWM检测负载 */
-        (cur_dev_status == CUR_STATUS_BE_CHARGING && 114 != T0LOAD && adc_val > 3910) ||                                   /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
-        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val > 3861)                                                       /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val > 3986) /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-        (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val > 3983) /* 充电座未被充电，且使用326KHz的PWM检测负载是否断开 */
-    )
+
+#if 0
+        (flag_is_being_charged && 114 == T0LOAD && adc_val > UNDETECT_LOAD_ADC_VAL_WHEN_BE_CHARGING) || /* 充电座正在被充电，且使用282KHz的PWM检测负载 */
+        // (flag_is_being_charged && 114 != T0LOAD && adc_val > 3910) ||                                   /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
+        (flag_is_being_charged && 114 != T0LOAD && adc_val > cmp_val) ||                                   /* 充电座正在被充电，且使用326KHz的PWM检测负载是否断开 */
+        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val > 3983) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+        // (cur_dev_status == CUR_STATUS_IN_CHARGING && adc_val > 3780) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+        (0 == flag_is_being_charged && 114 == T0LOAD && adc_val > 3872) || /* 充电座未被充电，且使用 282KHz 的PWM检测负载是否断开 */
+        (0 == flag_is_being_charged && 114 != T0LOAD && adc_val > cmp_val) /* 充电座未被充电，且使用 326KHz 的PWM检测负载是否断开 */
+#endif
+
+        adc_val > cmp_val)
     {
         undetect_load_cnt++;
-
-        // if (last_status) // 如果之前是检测到负载的状态
-        // {
-        //     last_status = 0; // 更新状态
-        //     pulse_cnt++;
-        // }
     }
-
-    // if (pulse_cnt >= 4) // 如果发生了四次状态变化，说明主机已经充满电了
-    // {
-    //     detect_load_cnt = 0;
-    //     undetect_load_cnt = 0;
-
-    //     last_status = 0;
-    //     pulse_cnt = 0;
-
-    //     flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
-    //     delay_ms(1);
-    //     return 0;
-    // }
 
     if (flag_tim_set_scan_time_is_arrive)
     {
@@ -698,7 +686,17 @@ void low_power_scan_handle(void)
 
         if (CHARGE_PIN)
         {
+            flag_is_being_charged = 1;
             cur_dev_status = CUR_STATUS_BE_CHARGING; // 直接进入被充电的状态，不检测负载
+        }
+
+        if (0 == P13D)
+        {
+            flag_is_open_lid = 0; // 表示盖上了保护盖
+        }
+        else
+        {
+            flag_is_open_lid = 1; // 表示打开了保护盖
         }
     }
 }
@@ -719,7 +717,7 @@ void main(void)
     delay_ms(1000);
     LED_GREEN_OFF();
 
-#if 0
+#if 0  // 测试时使用
     // flag_is_low_bat = 1; // 测试时使用
     // LED_GREEN_ON();
     PWM_ENABLE();
@@ -727,36 +725,24 @@ void main(void)
 
     // delay_ms(4000); // 等待检测负载的电流稳定
     // T3EN = 1;       // 测试时使用
-#endif
+#endif // 测试时使用
+
+    // set_timer0_pwm_when_charging(); // // 测试时使用
+
+    flag_is_open_lid = 1;                  // 表示保护盖打开
+    flag_is_being_charged = 0;             // 表示没有在充电
+    cur_dev_status = CUR_STATUS_POWER_OFF; // 上电之后便关机
 
     while (1)
     {
 #if 1
-        flag_is_open_lid = is_open_lid();
 
         if (CUR_STATUS_NONE == cur_dev_status)
         {
-            // 如果当前设备没有任何操作，检测是否有
-            // 是否盖上盖子，
-            // 是否在被充电 ，外部5V输入
-            ret_u8 = is_in_charging(); // 判断是否有外部的5V输入
-            if (ret_u8)
-            {
-#if 0  // 被充电时不给主机充电的版本
-       // 如果充电座正在被充电，关闭给主机的充电:
-                stop_charging_the_host();
-#endif // 被充电时不给主机充电的版本
-
-                cur_dev_status = CUR_STATUS_BE_CHARGING; //
-                delay_ms(1);
-                continue; //
-            }
-
             if (0 == flag_is_open_lid) // 如果没有打开盖子
             {
-                // 如果设备可以开机，检测有没有负载，如果没有负载 -> 关机
+                // 如果设备可以开机，检测有没有负载，如果没有 负载 -> 关机
                 // 如果给负载充满电 -> 关机
-
                 set_timer0_pwm_when_detecting();
                 // 打开充电
                 PWM_ENABLE();
@@ -767,7 +753,8 @@ void main(void)
                     // for (i = 0; i < 4000; i++)
                     for (i = 0; i < 500; i++) // 等待500ms
                     {
-                        if (is_open_lid()) // 如果打开了保护盖
+                        // if (is_open_lid()) // 如果打开了保护盖
+                        if (flag_is_open_lid) // 如果打开了保护盖
                         {
                             stop_charging_the_host(); // 关闭pwm，关闭绿灯
                             break;
@@ -777,84 +764,138 @@ void main(void)
                     }
                 }
 
-                // flag_is_enable_detect_load = 0;
-                // delay_ms(1);
                 adc_sel_channel(ADC_CHANNEL_LOAD);
-                detect_load_cnt = 0;
-                undetect_load_cnt = 0;
+                flag_is_enable_detect_load = 0; // 清除该标志位，准备进入检测负载
 
                 while (1) // 连续检测 xx s，判断有没有负载
                 {
-                    static volatile u16 __detect_ms_cnt = 0;
-                    adc_val = adc_get_val();
 
-                    // if (adc_val < DETECT_LOAD_ADC_VAL)
-                    // if (adc_val < 3642)
-                    if (adc_val < 3649)
-                    {
-                        detect_load_cnt++;
-                    }
-                    // else if (adc_val > UNDETECT_LOAD_ADC_VAL)
-                    // else if (adc_val > 3742)
-                    else if (adc_val > 3872)
-                    {
-                        undetect_load_cnt++;
-                    }
+#if 0 // 在该代码块内使用独立的检测负载的方式，未使用定时器来辅助计时
+                        static volatile u16 __detect_ms_cnt = 0;
+                        adc_val = adc_get_val();
 
-                    delay_ms(1);
-                    __detect_ms_cnt++;
-
-                    // if (__detect_ms_cnt >= 4000)
-                    if (__detect_ms_cnt >= 2500)
-                    {
-                        __detect_ms_cnt = 0;
-
-                        if (detect_load_cnt > undetect_load_cnt)
+                        if (adc_val < 3649)
                         {
-                            // 如果进入到这里，说明可能有负载
-                            if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
-                            {
-                                // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
-                                // 如果检测到有负载:
-                                // detect_load_cnt = 0;
-                                // undetect_load_cnt = 0;
-                                cur_dev_status = CUR_STATUS_IN_CHARGING;
-                                set_timer0_pwm_when_charging();
-                                // break;
-                            }
+                            detect_load_cnt++;
                         }
-                        else
+                        else if (adc_val > 3872)
                         {
-                            // 如果进入到这里，说明可能断开/没有负载
-                            if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
-                            {
-                                // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
-                                // 如果检测到 没有负载
-                                // detect_load_cnt = 0;
-                                // undetect_load_cnt = 0;
-                                stop_charging_the_host(); // 关闭pwm，关闭绿灯
-                                // break;
-                            }
+                            undetect_load_cnt++;
                         }
 
-                        detect_load_cnt = 0;
-                        undetect_load_cnt = 0;
-                        break;
+                        delay_ms(1);
+                        __detect_ms_cnt++;
+
+                        if (__detect_ms_cnt >= 2500)
+                        {
+                            __detect_ms_cnt = 0;
+
+                            if (detect_load_cnt > undetect_load_cnt)
+                            {
+                                // 如果进入到这里，说明可能有负载
+                                if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
+                                {
+                                    // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
+                                    // 如果检测到有负载:
+                                    // detect_load_cnt = 0;
+                                    // undetect_load_cnt = 0;
+                                    cur_dev_status = CUR_STATUS_IN_CHARGING;
+                                    set_timer0_pwm_when_charging();
+                                    // break;
+                                }
+                            }
+                            else
+                            {
+                                // 如果进入到这里，说明可能断开/没有负载
+                                // if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
+                                {
+                                    // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
+                                    // 如果检测到 没有负载
+                                    // detect_load_cnt = 0;
+                                    // undetect_load_cnt = 0;
+                                    stop_charging_the_host(); // 关闭pwm，关闭绿灯
+                                    // break;
+                                }
+                            }
+
+                            if (flag_is_being_charged) // 如果检测到了充电器
+                            {
+                                cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                            }
+
+                            detect_load_cnt = 0;
+                            undetect_load_cnt = 0;
+                            break;
+                        }
+
+#endif // 在该代码块内使用独立的检测负载的方式，未使用定时器来辅助计时
+
+                    ret_u8 = is_detect_load();
+                    if (0 == ret_u8) // 如果未检测到负载
+                    {
+                        stop_charging_the_host(); // 关闭pwm，关闭绿灯
+                        break;                    // 退出检测负载的循环
+                    }
+                    else if (1 == ret_u8) // 如果检测到负载
+                    {
+                        cur_dev_status = CUR_STATUS_IN_CHARGING;
+                        set_timer0_pwm_when_charging();
+                        break; // 退出检测负载的循环
                     }
 
-                    if (1 == is_open_lid())
+                    if (flag_is_open_lid)
                     {
                         // 如果打开了收纳盒，退出
                         detect_load_cnt = 0;
                         undetect_load_cnt = 0;
-                        __detect_ms_cnt = 0;
+                        // __detect_ms_cnt = 0;
                         // flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
                         // delay_ms(1);
                         stop_charging_the_host(); // 关闭pwm，关闭绿灯
-                        break;
+                        break;                    // 退出检测负载的循环
                     }
-                } // while (1) // 连续检测4s，判断有没有负载
+
+                    // 还不能直接进入被充电的状态，会无法关闭绿灯，该状态里面没有相应的处理
+                    // else if (flag_is_being_charged) // 如果在检测是否有负载期间 发现有充电器插入
+                    // {
+                    //     cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                    //     break;                                   // 退出检测负载的循环
+                    // }
+                } // while (1) // 连续检测 xx s，判断有没有负载
             }
+
+            if (flag_is_being_charged) // 如果检测到了充电器
+            {
+                cur_dev_status = CUR_STATUS_BE_CHARGING; //
+                if (1 == LED_GREEN_PIN)                  // 如果绿灯还在点亮，说明还有负载
+                {
+                    flag_is_detect_load_when_charged = 1; // 表示在充电时检测到了负载
+                }
+            }
+
+            // loop_cnt++;
+            // if ((cur_dev_status != CUR_STATUS_NONE) || /* 如果状态有变化，跳出 (CUR_STATUS_NONE == cur_dev_status) 的代码块 */
+            //     loop_cnt >= 2000)                      /* 如果超过了 xx s，也跳出当前的代码块 */
+            // {
+            //     loop_cnt = 0;
+            //     break;
+            // }
+
+            // delay_ms(1);
+            // } // while (1)
+
+            //             ret_u8 = is_in_charging(); // 判断是否有外部的5V输入
+            //             if (ret_u8)
+            //             {
+            // #if 0  // 被充电时不给主机充电的版本
+            //        // 如果充电座正在被充电，关闭给主机的充电:
+            //                 stop_charging_the_host();
+            // #endif // 被充电时不给主机充电的版本
+
+            //                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
+            //                 delay_ms(1);
+            //                 continue; //
+            //             }
 
             // 如果执行到这里还是没有改变状态，进入低功耗
             // 函数内部会判断是不是处于NONE状态，才进入低功耗：
@@ -878,13 +919,10 @@ void main(void)
             {
                 // 如果确实没有检测到负载 说明已经给主机充满电
                 flag_is_fully_charged = 1;
-                // PWM_DISABLE(); // 关闭控制充电的pwm
-                // LED_GREEN_ON(); // 重新点亮绿灯，防止绿灯在闪烁时刚好进入的熄灭的状态
 
                 /* 如果没有打开盖子/插入充电器，绿灯会一直常亮 */
 
                 // 现在改成充满电，熄灭绿灯
-                // LED_GREEN_OFF(); // 熄灭绿灯
                 stop_charging_the_host();              // 关闭PWM、关闭绿灯
                 flag_is_low_bat = 0;                   // 不给主机充电时，清空该标志位
                 cur_dev_status = CUR_STATUS_POWER_OFF; // 直接关机
@@ -911,6 +949,7 @@ void main(void)
             // 低电量和低电量关机检测：
             adc_sel_channel(ADC_CHANNEL_BAT);
             adc_val = adc_get_val();
+            bat_adc_val = adc_val;
             // if (adc_val < 1485 - AD_OFFSET) // 2.9V
             // if (adc_val < 1587 - AD_OFFSET) // 3.1V
             // if (adc_val < 1587) // 3.1V
@@ -946,7 +985,8 @@ void main(void)
             }
 
             // 检测是否插入了充电器:
-            if (is_in_charging())
+            // if (is_in_charging())
+            if (flag_is_being_charged)
             {
 #if 0  // 被充电时不给主机充电的版本
        // 如果充电座正在被充电，关闭给主机的充电，防止电流过高
@@ -965,8 +1005,8 @@ void main(void)
                 cur_dev_status = CUR_STATUS_BE_CHARGING; //
                 flag_is_low_bat = 0;                     // 充电座被充电时，清除该标志位
                 flag_is_enable_detect_load = 0;          // 清零该标志位，关闭对应的定时器计时功能
+                flag_is_detect_load_when_charged = 1;    // 还在给主机充电，并且检测到插入了充电器，那么就给这个标志位置一
                 delay_ms(1);
-                LED_GREEN_OFF(); // 等待状态和标志位更新完成，再关闭绿灯
                 continue;
 #endif
             }
@@ -974,10 +1014,11 @@ void main(void)
         else if (CUR_STATUS_BE_CHARGING == cur_dev_status) // 当前正在被充电
         {
             // 状态机，是否检测到负载，只在当前语句块使用
+            // 默认值只能是0，调用清ram函数后，所有变量的值就是0
             // 0--表示在充电座被充电期间，还没有开始检测是否有负载
             // 1--表示正在检测中
-            // 2--检测到有负载
-            // 3--检测到没有负载
+            // 2--检测到没有负载
+            // 3--检测到有负载
             static u8 __flag_detect_load_status = 0;
 
             // 表示盖子的状态
@@ -997,9 +1038,18 @@ void main(void)
                 }
             }
 
+            if (0 == __flag_detect_load_status && flag_is_detect_load_when_charged)
+            {
+                // 如果 __flag_detect_load_status 为默认值且 flag_is_detect_load_when_charged == 1，
+                // 说明外部先将flag_is_detect_load_when_charged置一，之后才进入该代码块
+                // 那么给 __flag_detect_load_status 赋值3，表示在被充电期间检测到有负载，接下来一直检测负载有没有断开
+                __flag_detect_load_status = 3;
+            }
+
             // 如果正在被充电，检测是否充满电
             adc_sel_channel(ADC_CHANNEL_BAT);
             adc_val = adc_get_val();
+            bat_adc_val = adc_val;
             // if (adc_val >= 2124 - AD_OFFSET) // 如果电池电压大于4.15V (实际测试是4.17V，才认为充满电)
             // if (adc_val >= 2150) // 如果电池电压大于4.20V(实际测试，在充电时，电池两端电压到4V就认为充满了)
             // if (adc_val >= 2150 + AD_OFFSET) // 实际测试可能大于4.18V
@@ -1010,8 +1060,9 @@ void main(void)
             }
 
             // 检测是否断开了充电器:
-            ret_u8 = is_in_charging();
-            if (0 == ret_u8)
+            // ret_u8 = is_in_charging();
+            // if (0 == ret_u8)
+            if (0 == flag_is_being_charged)
             {
                 // flag_bat_is_fully_charged = 0;
                 // cur_dev_status = CUR_STATUS_NONE;
@@ -1025,8 +1076,10 @@ void main(void)
                     cur_dev_status = CUR_STATUS_POWER_OFF;
                 }
 
+                // 退出该代码块前，先清除代码块内使用的变量：
                 flag_is_detect_load_when_charged = 0;
                 __lid_status = 0; // 清零，回到默认值
+                __flag_detect_load_status = 0;
                 continue;
             }
 
@@ -1063,7 +1116,7 @@ void main(void)
                         // for (i = 0; i < 4000; i++)
                         for (i = 0; i < 500; i++)
                         {
-                            if (is_open_lid()) // 如果打开了保护盖
+                            if (flag_is_open_lid) // 如果打开了保护盖
                             {
                                 __flag_detect_load_status = 0;
                                 flag_is_detect_load_when_charged = 0;
@@ -1089,8 +1142,8 @@ void main(void)
                     }
                     else if (1 == ret_u8)
                     {
-                        // 如果还未断开负载
-                        if (1 == __flag_detect_load_status)
+                        // 如果还未断开负载，或者是从检测负载到认为检测到有负载
+                        if (1 == __flag_detect_load_status) // 如果刚从200多K的PWM来到这里，需要切换成300多K的PWM
                         {
                             set_timer0_pwm_when_charging();
                         }
@@ -1110,10 +1163,11 @@ void main(void)
         {
             // 低电量关机:
             low_power_scan_handle();
-            // 从低电量关机后又唤醒，回到正常状态
 
-            // DEBUG_PIN = ~DEBUG_PIN;
-            cur_dev_status = CUR_STATUS_NONE;
+            if (cur_dev_status != CUR_STATUS_BE_CHARGING) // 如果不是插入了充电器唤醒的
+            {
+                cur_dev_status = CUR_STATUS_NONE; // 从低电量关机后又唤醒，回到正常状态
+            }
         }
 #endif
 
@@ -1171,6 +1225,76 @@ void int_isr(void) __interrupt
             }
         }
 
+        { // 检测是否打开了保护盖
+            static u8 detect_open_lid_cnt;
+            static u8 undetect_open_lid_cnt;
+
+            if (P13D) // 如果保护盖是开启的
+            {
+                undetect_open_lid_cnt = 0;
+                detect_open_lid_cnt++;
+                if (detect_open_lid_cnt >= 200) // 如果一直检测到有打开保护盖
+                {
+                    detect_open_lid_cnt = 0;
+                    flag_is_open_lid = 1; // 表示打开了保护盖
+                }
+            }
+            else // 如果保护盖是关闭的
+            {
+                detect_open_lid_cnt = 0;
+                undetect_open_lid_cnt++;
+                if (undetect_open_lid_cnt >= 200) // 如果一直检测到没有打开保护盖
+                {
+                    undetect_open_lid_cnt = 0;
+                    flag_is_open_lid = 0; // 表示没有
+                }
+            }
+        }
+
+#if 1
+        { // 检测充电的时间计数
+
+            static u8 detect_charge_cnt;   // 在没有充电期间，检测到有充电的时间计数
+            static u8 undetect_charge_cnt; // 在充电期间，检测到断开充电的时间计数
+
+            if (flag_is_being_charged) // 如果在充电，检测是否断开充电，并进行计数
+            {
+                if (CHARGE_PIN) // 如果检测到充电
+                {
+                    undetect_charge_cnt = 0;
+                }
+                else
+                {
+                    detect_charge_cnt = 0;
+                    undetect_charge_cnt++;
+                    if (undetect_charge_cnt >= 200) // 如果连续 xx ms都检测到
+                    {
+                        undetect_charge_cnt = 0;
+                        flag_is_being_charged = 0; // 表示不在充电
+                    }
+                }
+            }
+            else // 如果不在充电，检测是否有充电，并进行计数
+            {
+                if (CHARGE_PIN) // 如果检测到充电
+                {
+                    undetect_charge_cnt = 0;
+                    detect_charge_cnt++;
+                    if (detect_charge_cnt >= 200) // 如果连续 xx ms都检测到
+                    {
+                        detect_charge_cnt = 0;
+                        flag_is_being_charged = 1; // 表示正在被充电
+                    }
+                }
+                else // 如果检测不到充电
+                {
+                    detect_charge_cnt = 0;
+                }
+            }
+
+        } // 检测充电的时间计数
+#endif
+
 #if 1
         { // 负责控制红灯点亮/熄灭的相关代码块
             static u16 blink_cnt = 0;
@@ -1201,8 +1325,10 @@ void int_isr(void) __interrupt
 
                 fully_charged_cnt = 0;
             }
-            else if (CUR_STATUS_BE_CHARGING == cur_dev_status && /* 充电座被充电时 */
-                     0 == flag_bat_is_fully_charged)             /* 充电座未被充满电 */
+            // else if (CUR_STATUS_BE_CHARGING == cur_dev_status && /* 充电座被充电时 */
+            //          0 == flag_bat_is_fully_charged)             /* 充电座未被充满电 */
+            else if (flag_is_being_charged &&        /* 充电座被充电时 */
+                     0 == flag_bat_is_fully_charged) /* 充电座未被充满电 */
             {
                 // 如果充电座正在被充电，红灯常亮
                 // LED_GREEN_OFF(); // 关闭绿灯，避免与红灯冲突
@@ -1224,8 +1350,9 @@ void int_isr(void) __interrupt
             }
         }
 
-        //
-        {
+#if 1     // 控制充电时，让绿灯闪烁的代码块
+        { // 控制充电时，让绿灯闪烁的代码块
+
             static u16 led_green_blink_cnt = 0;
             // 如果充电座正在给主机充电，并且充电座的电池不处于低电量
 #if 1 // 在被充电时，仍然使能给主机充电的版本
@@ -1260,7 +1387,10 @@ void int_isr(void) __interrupt
             {
                 led_green_blink_cnt = 0;
             }
-        }
+
+        } // 控制充电时，让绿灯闪烁的代码块
+#endif // 控制充电时，让绿灯闪烁的代码块
+
 #endif
 
         T3IF = 0;

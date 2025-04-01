@@ -1,25 +1,29 @@
 gplink-2.2.37 (Jan 22 2024)
-Map File - Created 2025-3-19  18:45:52
+Map File - Created 2025-4-1  17:12:33
  
                                  Section Info
                   Section       Type    Address   Location Size(Bytes)
                 ---------  ---------  ---------  ---------  ---------
                   STARTUP       code   00000000    program   0x000002
-              c_interrupt       code   0x000008    program   0x00013e
-           code_MC32F7361       code   0x0000a7    program   0x0009ae
+              c_interrupt       code   0x000008    program   0x000196
+           code_MC32F7361       code   0x0000d3    program   0x0007f2
+            code__mullong       code   0x0004cc    program   0x000116
+           code__divulong       code   0x000557    program   0x0000f0
                 sharebank      udata   00000000       data   0x000007
-          UDL_MC32F7361_0      udata   0x000007       data   0x000031
-           UD_MC32F7361_1      udata   0x000038       data   0x000004
-           UD_MC32F7361_2      udata   0x00003c       data   0x000004
-           UD_MC32F7361_8      udata   0x000040       data   0x000002
-           UD_MC32F7361_9      udata   0x000042       data   0x000002
-           UD_MC32F7361_0      udata   0x000044       data   0x000001
-           UD_MC32F7361_3      udata   0x000045       data   0x000001
-           UD_MC32F7361_4      udata   0x000046       data   0x000001
-           UD_MC32F7361_5      udata   0x000047       data   0x000001
-           UD_MC32F7361_6      udata   0x000048       data   0x000001
-           UD_MC32F7361_7      udata   0x000049       data   0x000001
-          UD_MC32F7361_10      udata   0x00004a       data   0x000001
+          UDL_MC32F7361_0      udata   0x000007       data   0x000033
+           UDL__mullong_0      udata   0x00003a       data   0x000011
+          UDL__divulong_0      udata   0x00004b       data   0x000010
+           UD_MC32F7361_1      udata   0x00005b       data   0x000004
+           UD_MC32F7361_2      udata   0x00005f       data   0x000004
+           UD_MC32F7361_8      udata   0x000063       data   0x000002
+           UD_MC32F7361_9      udata   0x000065       data   0x000002
+           UD_MC32F7361_0      udata   0x000067       data   0x000001
+           UD_MC32F7361_3      udata   0x000068       data   0x000001
+           UD_MC32F7361_4      udata   0x000069       data   0x000001
+           UD_MC32F7361_5      udata   0x00006a       data   0x000001
+           UD_MC32F7361_6      udata   0x00006b       data   0x000001
+           UD_MC32F7361_7      udata   0x00006c       data   0x000001
+          UD_MC32F7361_10      udata   0x00006d       data   0x000001
      UD_abs_mc32f7361_180      udata   0x000180       data   0x000001
      UD_abs_mc32f7361_181      udata   0x000181       data   0x000001
      UD_abs_mc32f7361_182      udata   0x000182       data   0x000001
@@ -96,10 +100,12 @@ Map File - Created 2025-3-19  18:45:52
                                Start         End
                            ---------   ---------
                             00000000    00000000
-                            0x000008    0x0000a6
-                            0x0000a7    0x00057d
+                            0x000008    0x0000d2
+                            0x0000d3    0x0004cb
+                            0x0004cc    0x000556
+                            0x000557    0x0005ce
  
-                            1399 program addresses used
+                            1480 program addresses used
  
                               Symbols
                      Name    Address   Location    Storage File
@@ -111,222 +117,186 @@ Map File - Created 2025-3-19  18:45:52
                     STK02   0x000004       data     extern MC32F7361.asm
                     STK01   0x000005       data     extern MC32F7361.asm
                     STK00   0x000006       data     extern MC32F7361.asm
-          _cur_dev_status   0x000044       data     extern MC32F7361.asm
-         _detect_load_cnt   0x000038       data     extern MC32F7361.asm
-       _undetect_load_cnt   0x00003c       data     extern MC32F7361.asm
-                    _abuf   0x000045       data     extern MC32F7361.asm
-               _statusbuf   0x000046       data     extern MC32F7361.asm
-                       _i   0x000047       data     extern MC32F7361.asm
-                     _cnt   0x000048       data     extern MC32F7361.asm
-                  _ret_u8   0x000049       data     extern MC32F7361.asm
-                 _adc_val   0x000040       data     extern MC32F7361.asm
-                 _tmp_val   0x000042       data     extern MC32F7361.asm
-                   _flag1   0x00004a       data     extern MC32F7361.asm
-                  r0x101D   0x000007       data     static MC32F7361.asm
-                  r0x101C   0x000008       data     static MC32F7361.asm
-                  r0x101E   0x000009       data     static MC32F7361.asm
-                  r0x101F   0x00000a       data     static MC32F7361.asm
-                  r0x1020   0x00000b       data     static MC32F7361.asm
-                  r0x1021   0x00000c       data     static MC32F7361.asm
-                  r0x1022   0x00000d       data     static MC32F7361.asm
-                  r0x1023   0x00000e       data     static MC32F7361.asm
-                  r0x1024   0x00000f       data     static MC32F7361.asm
-                  r0x1025   0x000010       data     static MC32F7361.asm
-                  r0x1026   0x000011       data     static MC32F7361.asm
-                  r0x1028   0x000012       data     static MC32F7361.asm
-                  r0x1027   0x000013       data     static MC32F7361.asm
-                  r0x1029   0x000014       data     static MC32F7361.asm
-                  r0x102A   0x000015       data     static MC32F7361.asm
-                  r0x102B   0x000016       data     static MC32F7361.asm
-                  r0x102C   0x000017       data     static MC32F7361.asm
-                  r0x102D   0x000018       data     static MC32F7361.asm
-                  r0x102E   0x000019       data     static MC32F7361.asm
-                  r0x102F   0x00001a       data     static MC32F7361.asm
-                  r0x1033   0x00001b       data     static MC32F7361.asm
-                  r0x1032   0x00001c       data     static MC32F7361.asm
-                  r0x1031   0x00001d       data     static MC32F7361.asm
-                  r0x1030   0x00001e       data     static MC32F7361.asm
-                  r0x1034   0x00001f       data     static MC32F7361.asm
-                  r0x1035   0x000020       data     static MC32F7361.asm
-                  r0x1036   0x000021       data     static MC32F7361.asm
-                  r0x1037   0x000022       data     static MC32F7361.asm
-                  r0x103B   0x000023       data     static MC32F7361.asm
-                  r0x103A   0x000024       data     static MC32F7361.asm
-                  r0x1039   0x000025       data     static MC32F7361.asm
-                  r0x1038   0x000026       data     static MC32F7361.asm
-                  r0x103C   0x000027       data     static MC32F7361.asm
-                  r0x103D   0x000028       data     static MC32F7361.asm
-_adc_sel_channel_last_adc_channel_65536_22   0x000029       data     static MC32F7361.asm
-_is_in_charging_last_status_65536_32   0x00002a       data     static MC32F7361.asm
-_is_open_lid_last_status_65536_47   0x00002b       data     static MC32F7361.asm
-_main___detect_ms_cnt_327680_106   0x00002c       data     static MC32F7361.asm
-_main___lid_status_196608_128   0x00002e       data     static MC32F7361.asm
-_main___flag_detect_load_status_196608_128   0x00002f       data     static MC32F7361.asm
-_int_isr_detect_load_cnt_ms_196608_157   0x000030       data     static MC32F7361.asm
-_int_isr_blink_cnt_196608_161   0x000032       data     static MC32F7361.asm
-_int_isr_fully_charged_cnt_196608_161   0x000034       data     static MC32F7361.asm
-_int_isr_led_green_blink_cnt_196608_177   0x000036       data     static MC32F7361.asm
+          _cur_dev_status   0x000067       data     extern MC32F7361.asm
+         _detect_load_cnt   0x00005b       data     extern MC32F7361.asm
+       _undetect_load_cnt   0x00005f       data     extern MC32F7361.asm
+                    _abuf   0x000068       data     extern MC32F7361.asm
+               _statusbuf   0x000069       data     extern MC32F7361.asm
+                       _i   0x00006a       data     extern MC32F7361.asm
+                     _cnt   0x00006b       data     extern MC32F7361.asm
+                  _ret_u8   0x00006c       data     extern MC32F7361.asm
+                 _adc_val   0x000063       data     extern MC32F7361.asm
+             _bat_adc_val   0x000065       data     extern MC32F7361.asm
+                   _flag1   0x00006d       data     extern MC32F7361.asm
+                  r0x1027   0x000007       data     static MC32F7361.asm
+                  r0x1026   0x000008       data     static MC32F7361.asm
+                  r0x1028   0x000009       data     static MC32F7361.asm
+                  r0x1029   0x00000a       data     static MC32F7361.asm
+                  r0x102A   0x00000b       data     static MC32F7361.asm
+                  r0x102B   0x00000c       data     static MC32F7361.asm
+                  r0x102C   0x00000d       data     static MC32F7361.asm
+                  r0x102D   0x00000e       data     static MC32F7361.asm
+                  r0x102E   0x00000f       data     static MC32F7361.asm
+                  r0x102F   0x000010       data     static MC32F7361.asm
+                  r0x1030   0x000011       data     static MC32F7361.asm
+                  r0x1032   0x000012       data     static MC32F7361.asm
+                  r0x1031   0x000013       data     static MC32F7361.asm
+                  r0x1033   0x000014       data     static MC32F7361.asm
+                  r0x1034   0x000015       data     static MC32F7361.asm
+                  r0x1035   0x000016       data     static MC32F7361.asm
+                  r0x1039   0x000017       data     static MC32F7361.asm
+                  r0x1038   0x000018       data     static MC32F7361.asm
+                  r0x1037   0x000019       data     static MC32F7361.asm
+                  r0x1036   0x00001a       data     static MC32F7361.asm
+                  r0x103D   0x00001b       data     static MC32F7361.asm
+                  r0x103C   0x00001c       data     static MC32F7361.asm
+                  r0x103B   0x00001d       data     static MC32F7361.asm
+                  r0x103A   0x00001e       data     static MC32F7361.asm
+                  r0x103E   0x00001f       data     static MC32F7361.asm
+                  r0x103F   0x000020       data     static MC32F7361.asm
+                  r0x1040   0x000021       data     static MC32F7361.asm
+                  r0x1041   0x000022       data     static MC32F7361.asm
+_adc_sel_channel_last_adc_channel_65536_22   0x000023       data     static MC32F7361.asm
+_is_detect_load_tmp_u32_65536_32   0x000024       data     static MC32F7361.asm
+_is_detect_load_cmp_val_65537_33   0x000028       data     static MC32F7361.asm
+_main___lid_status_196608_95   0x00002c       data     static MC32F7361.asm
+_main___flag_detect_load_status_196608_95   0x00002d       data     static MC32F7361.asm
+_int_isr_detect_load_cnt_ms_196608_126   0x00002e       data     static MC32F7361.asm
+_int_isr_undetect_open_lid_cnt_196608_130   0x000030       data     static MC32F7361.asm
+_int_isr_detect_open_lid_cnt_196608_130   0x000031       data     static MC32F7361.asm
+_int_isr_undetect_charge_cnt_196608_135   0x000032       data     static MC32F7361.asm
+_int_isr_detect_charge_cnt_196608_135   0x000033       data     static MC32F7361.asm
+_int_isr_blink_cnt_196608_144   0x000034       data     static MC32F7361.asm
+_int_isr_fully_charged_cnt_196608_144   0x000036       data     static MC32F7361.asm
+_int_isr_led_green_blink_cnt_196608_160   0x000038       data     static MC32F7361.asm
          __sdcc_interrupt   0x000008    program     static MC32F7361.asm
                  _int_isr   0x000008    program     extern MC32F7361.asm
-               _00746_DS_   0x000018    program     static MC32F7361.asm
-               _00872_DS_   0x00002f    program     static MC32F7361.asm
-               _00750_DS_   0x000035    program     static MC32F7361.asm
-               _00751_DS_   0x000037    program     static MC32F7361.asm
-               _00873_DS_   0x000043    program     static MC32F7361.asm
-               _00753_DS_   0x000048    program     static MC32F7361.asm
-               _00874_DS_   0x00004e    program     static MC32F7361.asm
-               _00764_DS_   0x000052    program     static MC32F7361.asm
-               _00875_DS_   0x000058    program     static MC32F7361.asm
-               _00761_DS_   0x00005c    program     static MC32F7361.asm
-               _00765_DS_   0x00005e    program     static MC32F7361.asm
-               _00779_DS_   0x000061    program     static MC32F7361.asm
-               _00775_DS_   0x00006b    program     static MC32F7361.asm
-               _00876_DS_   0x000074    program     static MC32F7361.asm
-               _00773_DS_   0x000079    program     static MC32F7361.asm
-               _00780_DS_   0x00007b    program     static MC32F7361.asm
-               _00794_DS_   0x000085    program     static MC32F7361.asm
-               _00877_DS_   0x00008e    program     static MC32F7361.asm
-               _00792_DS_   0x000092    program     static MC32F7361.asm
-               _00878_DS_   0x000098    program     static MC32F7361.asm
-               _00789_DS_   0x00009c    program     static MC32F7361.asm
-               _00795_DS_   0x00009f    program     static MC32F7361.asm
-               _00796_DS_   0x0000a1    program     static MC32F7361.asm
-               _00801_DS_   0x0000a2    program     static MC32F7361.asm
-         END_OF_INTERRUPT   0x0000a6    program     static MC32F7361.asm
-                    _main   0x0000a7    program     extern MC32F7361.asm
-               _00553_DS_   0x0000b2    program     static MC32F7361.asm
-               _00443_DS_   0x0000ca    program     static MC32F7361.asm
-               _00555_DS_   0x0000d2    program     static MC32F7361.asm
-               _00451_DS_   0x0000da    program     static MC32F7361.asm
-               _00725_DS_   0x0000e7    program     static MC32F7361.asm
-               _00452_DS_   0x0000e9    program     static MC32F7361.asm
-               _00470_DS_   0x0000f3    program     static MC32F7361.asm
-               _00726_DS_   0x0000fd    program     static MC32F7361.asm
-               _00456_DS_   0x000107    program     static MC32F7361.asm
-               _00727_DS_   0x00010d    program     static MC32F7361.asm
-               _00457_DS_   0x000116    program     static MC32F7361.asm
-               _00728_DS_   0x000123    program     static MC32F7361.asm
-               _00729_DS_   0x000135    program     static MC32F7361.asm
-               _00730_DS_   0x000162    program     static MC32F7361.asm
-               _00463_DS_   0x000168    program     static MC32F7361.asm
-               _00731_DS_   0x000193    program     static MC32F7361.asm
-               _00464_DS_   0x000196    program     static MC32F7361.asm
-               _00466_DS_   0x00019f    program     static MC32F7361.asm
-               _00473_DS_   0x0001b0    program     static MC32F7361.asm
-               _00550_DS_   0x0001b2    program     static MC32F7361.asm
-               _00732_DS_   0x0001bd    program     static MC32F7361.asm
-               _00479_DS_   0x0001c7    program     static MC32F7361.asm
-               _00481_DS_   0x0001d2    program     static MC32F7361.asm
-               _00733_DS_   0x0001de    program     static MC32F7361.asm
-               _00491_DS_   0x0001ea    program     static MC32F7361.asm
-               _00734_DS_   0x0001f0    program     static MC32F7361.asm
-               _00488_DS_   0x0001f9    program     static MC32F7361.asm
-               _00735_DS_   0x0001ff    program     static MC32F7361.asm
-               _00492_DS_   0x000206    program     static MC32F7361.asm
-               _00547_DS_   0x000216    program     static MC32F7361.asm
-               _00499_DS_   0x000223    program     static MC32F7361.asm
-               _00502_DS_   0x000225    program     static MC32F7361.asm
-               _00736_DS_   0x000231    program     static MC32F7361.asm
-               _00504_DS_   0x000234    program     static MC32F7361.asm
-               _00506_DS_   0x00023f    program     static MC32F7361.asm
-               _00507_DS_   0x000241    program     static MC32F7361.asm
-               _00509_DS_   0x000244    program     static MC32F7361.asm
-               _00538_DS_   0x000255    program     static MC32F7361.asm
-               _00737_DS_   0x00025a    program     static MC32F7361.asm
-               _00738_DS_   0x00025f    program     static MC32F7361.asm
-               _00532_DS_   0x000265    program     static MC32F7361.asm
-               _00557_DS_   0x000273    program     static MC32F7361.asm
-               _00517_DS_   0x00027d    program     static MC32F7361.asm
-               _00739_DS_   0x00028a    program     static MC32F7361.asm
-               _00520_DS_   0x00028c    program     static MC32F7361.asm
-               _00740_DS_   0x000291    program     static MC32F7361.asm
-               _00529_DS_   0x000295    program     static MC32F7361.asm
-               _00527_DS_   0x0002a0    program     static MC32F7361.asm
-               _00522_DS_   0x0002a9    program     static MC32F7361.asm
-               _00524_DS_   0x0002ad    program     static MC32F7361.asm
-               _00544_DS_   0x0002ae    program     static MC32F7361.asm
-               _00551_DS_   0x0002b4    program     static MC32F7361.asm
-   _low_power_scan_handle   0x0002b7    program     extern MC32F7361.asm
-               _00412_DS_   0x0002bf    program     static MC32F7361.asm
-               _00424_DS_   0x0002e4    program     static MC32F7361.asm
-               _00431_DS_   0x0002ee    program     static MC32F7361.asm
-  _stop_charging_the_host   0x0002ef    program     extern MC32F7361.asm
-          _is_detect_load   0x0002f3    program     extern MC32F7361.asm
-               _00309_DS_   0x000301    program     static MC32F7361.asm
-               _00394_DS_   0x000315    program     static MC32F7361.asm
-               _00326_DS_   0x000317    program     static MC32F7361.asm
-               _00395_DS_   0x000320    program     static MC32F7361.asm
-               _00396_DS_   0x000326    program     static MC32F7361.asm
-               _00328_DS_   0x000328    program     static MC32F7361.asm
-               _00397_DS_   0x000332    program     static MC32F7361.asm
-               _00319_DS_   0x000334    program     static MC32F7361.asm
-               _00320_DS_   0x00033c    program     static MC32F7361.asm
-               _00398_DS_   0x00034a    program     static MC32F7361.asm
-               _00316_DS_   0x00034c    program     static MC32F7361.asm
-               _00399_DS_   0x000355    program     static MC32F7361.asm
-               _00400_DS_   0x00035b    program     static MC32F7361.asm
-               _00318_DS_   0x00035d    program     static MC32F7361.asm
-               _00401_DS_   0x000367    program     static MC32F7361.asm
-               _00310_DS_   0x000369    program     static MC32F7361.asm
-               _00321_DS_   0x000370    program     static MC32F7361.asm
-               _00402_DS_   0x000386    program     static MC32F7361.asm
-               _00403_DS_   0x0003b3    program     static MC32F7361.asm
-               _00332_DS_   0x0003b8    program     static MC32F7361.asm
-               _00333_DS_   0x0003b9    program     static MC32F7361.asm
-               _00335_DS_   0x0003c1    program     static MC32F7361.asm
-             _is_open_lid   0x0003c3    program     extern MC32F7361.asm
-               _00272_DS_   0x0003c8    program     static MC32F7361.asm
-               _00273_DS_   0x0003c9    program     static MC32F7361.asm
-               _00275_DS_   0x0003cf    program     static MC32F7361.asm
-               _00289_DS_   0x0003d3    program     static MC32F7361.asm
-               _00277_DS_   0x0003d6    program     static MC32F7361.asm
-               _00303_DS_   0x0003e6    program     static MC32F7361.asm
-               _00291_DS_   0x0003e8    program     static MC32F7361.asm
-               _00282_DS_   0x0003eb    program     static MC32F7361.asm
-               _00288_DS_   0x0003f9    program     static MC32F7361.asm
-               _00293_DS_   0x0003fc    program     static MC32F7361.asm
-          _is_in_charging   0x0003fd    program     extern MC32F7361.asm
-               _00235_DS_   0x000402    program     static MC32F7361.asm
-               _00236_DS_   0x000403    program     static MC32F7361.asm
-               _00238_DS_   0x000409    program     static MC32F7361.asm
-               _00252_DS_   0x00040d    program     static MC32F7361.asm
-               _00240_DS_   0x000410    program     static MC32F7361.asm
-               _00266_DS_   0x000420    program     static MC32F7361.asm
-               _00254_DS_   0x000422    program     static MC32F7361.asm
-               _00245_DS_   0x000425    program     static MC32F7361.asm
-               _00251_DS_   0x000433    program     static MC32F7361.asm
-               _00256_DS_   0x000436    program     static MC32F7361.asm
-                _Sys_Init   0x000437    program     extern MC32F7361.asm
-             _adc_get_val   0x000442    program     extern MC32F7361.asm
-               _00184_DS_   0x00044c    program     static MC32F7361.asm
-               _00173_DS_   0x00044d    program     static MC32F7361.asm
-               _00224_DS_   0x000473    program     static MC32F7361.asm
-               _00179_DS_   0x000479    program     static MC32F7361.asm
-               _00225_DS_   0x00047f    program     static MC32F7361.asm
-               _00181_DS_   0x000485    program     static MC32F7361.asm
-               _00182_DS_   0x000497    program     static MC32F7361.asm
-         _adc_sel_channel   0x0004df    program     extern MC32F7361.asm
-               _00148_DS_   0x0004e5    program     static MC32F7361.asm
-               _00167_DS_   0x0004ec    program     static MC32F7361.asm
-               _00168_DS_   0x0004f1    program     static MC32F7361.asm
-               _00149_DS_   0x0004f2    program     static MC32F7361.asm
-               _00150_DS_   0x0004f9    program     static MC32F7361.asm
-               _00152_DS_   0x0004ff    program     static MC32F7361.asm
-               _00153_DS_   0x000503    program     static MC32F7361.asm
-           _timer3_config   0x000504    program     extern MC32F7361.asm
-_set_timer0_pwm_when_charging   0x00050a    program     extern MC32F7361.asm
-_set_timer0_pwm_when_detecting   0x000519    program     extern MC32F7361.asm
-       _timer0_pwm_config   0x000528    program     extern MC32F7361.asm
-              _adc_config   0x000534    program     extern MC32F7361.asm
-                 _IO_Init   0x00053d    program     extern MC32F7361.asm
-                 _CLR_RAM   0x000552    program     extern MC32F7361.asm
-               _00118_DS_   0x000553    program     static MC32F7361.asm
-               _00116_DS_   0x00055a    program     static MC32F7361.asm
-                _delay_ms   0x00055e    program     extern MC32F7361.asm
-               _00108_DS_   0x000561    program     static MC32F7361.asm
-               _00105_DS_   0x000569    program     static MC32F7361.asm
-               _00107_DS_   0x000577    program     static MC32F7361.asm
-               _00111_DS_   0x00057d    program     static MC32F7361.asm
+               _00613_DS_   0x000018    program     static MC32F7361.asm
+               _00791_DS_   0x00002f    program     static MC32F7361.asm
+               _00617_DS_   0x000035    program     static MC32F7361.asm
+               _00618_DS_   0x000037    program     static MC32F7361.asm
+               _00624_DS_   0x000042    program     static MC32F7361.asm
+               _00625_DS_   0x00004a    program     static MC32F7361.asm
+               _00629_DS_   0x000050    program     static MC32F7361.asm
+               _00637_DS_   0x000059    program     static MC32F7361.asm
+               _00634_DS_   0x000064    program     static MC32F7361.asm
+               _00638_DS_   0x000065    program     static MC32F7361.asm
+               _00796_DS_   0x000071    program     static MC32F7361.asm
+               _00640_DS_   0x000076    program     static MC32F7361.asm
+               _00797_DS_   0x00007c    program     static MC32F7361.asm
+               _00651_DS_   0x000080    program     static MC32F7361.asm
+               _00798_DS_   0x000086    program     static MC32F7361.asm
+               _00648_DS_   0x00008a    program     static MC32F7361.asm
+               _00652_DS_   0x00008c    program     static MC32F7361.asm
+               _00666_DS_   0x00008f    program     static MC32F7361.asm
+               _00662_DS_   0x000097    program     static MC32F7361.asm
+               _00799_DS_   0x0000a0    program     static MC32F7361.asm
+               _00660_DS_   0x0000a5    program     static MC32F7361.asm
+               _00667_DS_   0x0000a7    program     static MC32F7361.asm
+               _00681_DS_   0x0000b1    program     static MC32F7361.asm
+               _00800_DS_   0x0000ba    program     static MC32F7361.asm
+               _00679_DS_   0x0000be    program     static MC32F7361.asm
+               _00801_DS_   0x0000c4    program     static MC32F7361.asm
+               _00676_DS_   0x0000c8    program     static MC32F7361.asm
+               _00682_DS_   0x0000cb    program     static MC32F7361.asm
+               _00683_DS_   0x0000cd    program     static MC32F7361.asm
+               _00688_DS_   0x0000ce    program     static MC32F7361.asm
+         END_OF_INTERRUPT   0x0000d2    program     static MC32F7361.asm
+                    _main   0x0000d3    program     extern MC32F7361.asm
+               _00425_DS_   0x0000e2    program     static MC32F7361.asm
+               _00427_DS_   0x0000ee    program     static MC32F7361.asm
+               _00326_DS_   0x0000f2    program     static MC32F7361.asm
+               _00597_DS_   0x0000ff    program     static MC32F7361.asm
+               _00327_DS_   0x000101    program     static MC32F7361.asm
+               _00336_DS_   0x000104    program     static MC32F7361.asm
+               _00331_DS_   0x00010c    program     static MC32F7361.asm
+               _00332_DS_   0x000114    program     static MC32F7361.asm
+               _00339_DS_   0x00011f    program     static MC32F7361.asm
+               _00343_DS_   0x00012b    program     static MC32F7361.asm
+               _00422_DS_   0x00012d    program     static MC32F7361.asm
+               _00598_DS_   0x000138    program     static MC32F7361.asm
+               _00349_DS_   0x000142    program     static MC32F7361.asm
+               _00351_DS_   0x00014d    program     static MC32F7361.asm
+               _00599_DS_   0x00015d    program     static MC32F7361.asm
+               _00361_DS_   0x000169    program     static MC32F7361.asm
+               _00600_DS_   0x00016f    program     static MC32F7361.asm
+               _00358_DS_   0x000178    program     static MC32F7361.asm
+               _00601_DS_   0x00017e    program     static MC32F7361.asm
+               _00362_DS_   0x000185    program     static MC32F7361.asm
+               _00419_DS_   0x000191    program     static MC32F7361.asm
+               _00366_DS_   0x00019e    program     static MC32F7361.asm
+               _00369_DS_   0x0001a0    program     static MC32F7361.asm
+               _00371_DS_   0x0001a8    program     static MC32F7361.asm
+               _00602_DS_   0x0001b8    program     static MC32F7361.asm
+               _00374_DS_   0x0001bb    program     static MC32F7361.asm
+               _00376_DS_   0x0001c2    program     static MC32F7361.asm
+               _00377_DS_   0x0001c4    program     static MC32F7361.asm
+               _00379_DS_   0x0001c8    program     static MC32F7361.asm
+               _00408_DS_   0x0001d9    program     static MC32F7361.asm
+               _00603_DS_   0x0001de    program     static MC32F7361.asm
+               _00604_DS_   0x0001e3    program     static MC32F7361.asm
+               _00402_DS_   0x0001e9    program     static MC32F7361.asm
+               _00429_DS_   0x0001f7    program     static MC32F7361.asm
+               _00387_DS_   0x0001fd    program     static MC32F7361.asm
+               _00605_DS_   0x00020a    program     static MC32F7361.asm
+               _00390_DS_   0x00020c    program     static MC32F7361.asm
+               _00606_DS_   0x000211    program     static MC32F7361.asm
+               _00399_DS_   0x000215    program     static MC32F7361.asm
+               _00397_DS_   0x000220    program     static MC32F7361.asm
+               _00392_DS_   0x000229    program     static MC32F7361.asm
+               _00394_DS_   0x00022d    program     static MC32F7361.asm
+               _00416_DS_   0x00022e    program     static MC32F7361.asm
+               _00607_DS_   0x000238    program     static MC32F7361.asm
+               _00423_DS_   0x000239    program     static MC32F7361.asm
+   _low_power_scan_handle   0x00023c    program     extern MC32F7361.asm
+               _00286_DS_   0x000244    program     static MC32F7361.asm
+               _00298_DS_   0x000269    program     static MC32F7361.asm
+               _00301_DS_   0x000274    program     static MC32F7361.asm
+               _00303_DS_   0x000278    program     static MC32F7361.asm
+               _00308_DS_   0x000279    program     static MC32F7361.asm
+  _stop_charging_the_host   0x00027a    program     extern MC32F7361.asm
+          _is_detect_load   0x00027e    program     extern MC32F7361.asm
+               _00235_DS_   0x0002f1    program     static MC32F7361.asm
+               _00274_DS_   0x00030b    program     static MC32F7361.asm
+               _00239_DS_   0x000315    program     static MC32F7361.asm
+               _00275_DS_   0x000329    program     static MC32F7361.asm
+               _00240_DS_   0x000332    program     static MC32F7361.asm
+               _00276_DS_   0x000348    program     static MC32F7361.asm
+               _00277_DS_   0x000375    program     static MC32F7361.asm
+               _00244_DS_   0x00037a    program     static MC32F7361.asm
+               _00245_DS_   0x00037b    program     static MC32F7361.asm
+               _00247_DS_   0x000383    program     static MC32F7361.asm
+                _Sys_Init   0x000385    program     extern MC32F7361.asm
+             _adc_get_val   0x000390    program     extern MC32F7361.asm
+               _00184_DS_   0x00039a    program     static MC32F7361.asm
+               _00173_DS_   0x00039b    program     static MC32F7361.asm
+               _00224_DS_   0x0003c1    program     static MC32F7361.asm
+               _00179_DS_   0x0003c7    program     static MC32F7361.asm
+               _00225_DS_   0x0003cd    program     static MC32F7361.asm
+               _00181_DS_   0x0003d3    program     static MC32F7361.asm
+               _00182_DS_   0x0003e5    program     static MC32F7361.asm
+         _adc_sel_channel   0x00042d    program     extern MC32F7361.asm
+               _00148_DS_   0x000433    program     static MC32F7361.asm
+               _00167_DS_   0x00043a    program     static MC32F7361.asm
+               _00168_DS_   0x00043f    program     static MC32F7361.asm
+               _00149_DS_   0x000440    program     static MC32F7361.asm
+               _00150_DS_   0x000447    program     static MC32F7361.asm
+               _00152_DS_   0x00044d    program     static MC32F7361.asm
+               _00153_DS_   0x000451    program     static MC32F7361.asm
+           _timer3_config   0x000452    program     extern MC32F7361.asm
+_set_timer0_pwm_when_charging   0x000458    program     extern MC32F7361.asm
+_set_timer0_pwm_when_detecting   0x000467    program     extern MC32F7361.asm
+       _timer0_pwm_config   0x000476    program     extern MC32F7361.asm
+              _adc_config   0x000482    program     extern MC32F7361.asm
+                 _IO_Init   0x00048b    program     extern MC32F7361.asm
+                 _CLR_RAM   0x0004a0    program     extern MC32F7361.asm
+               _00118_DS_   0x0004a1    program     static MC32F7361.asm
+               _00116_DS_   0x0004a8    program     static MC32F7361.asm
+                _delay_ms   0x0004ac    program     extern MC32F7361.asm
+               _00108_DS_   0x0004af    program     static MC32F7361.asm
+               _00105_DS_   0x0004b7    program     static MC32F7361.asm
+               _00107_DS_   0x0004c5    program     static MC32F7361.asm
+               _00111_DS_   0x0004cb    program     static MC32F7361.asm
                _INDF0bits   0x000180       data     extern mc32f7361.asm
                    _INDF0   0x000180       data     extern mc32f7361.asm
                _INDF1bits   0x000181       data     extern mc32f7361.asm
@@ -469,4 +439,50 @@ _set_timer0_pwm_when_detecting   0x000519    program     extern MC32F7361.asm
                    _DBGPR   0x0001f6       data     extern mc32f7361.asm
              _HIRCCALbits   0x0001fc       data     extern mc32f7361.asm
                  _HIRCCAL   0x0001fc       data     extern mc32f7361.asm
+                  r0x1003   0x00003a       data     static _mullong.asm
+                  r0x1002   0x00003b       data     static _mullong.asm
+                  r0x1001   0x00003c       data     static _mullong.asm
+                  r0x1000   0x00003d       data     static _mullong.asm
+                  r0x1007   0x00003e       data     static _mullong.asm
+                  r0x1006   0x00003f       data     static _mullong.asm
+                  r0x1005   0x000040       data     static _mullong.asm
+                  r0x1004   0x000041       data     static _mullong.asm
+                  r0x1008   0x000042       data     static _mullong.asm
+                  r0x1009   0x000043       data     static _mullong.asm
+                  r0x100A   0x000044       data     static _mullong.asm
+                  r0x100B   0x000045       data     static _mullong.asm
+                  r0x100C   0x000046       data     static _mullong.asm
+                  r0x1010   0x000047       data     static _mullong.asm
+                  r0x100F   0x000048       data     static _mullong.asm
+                  r0x100E   0x000049       data     static _mullong.asm
+                  r0x100D   0x00004a       data     static _mullong.asm
+                __mullong   0x0004cc    program     extern _mullong.asm
+               _00119_DS_   0x0004e1    program     static _mullong.asm
+               _00109_DS_   0x0004f1    program     static _mullong.asm
+               _00112_DS_   0x000507    program     static _mullong.asm
+               _00115_DS_   0x00051d    program     static _mullong.asm
+               _00114_DS_   0x000532    program     static _mullong.asm
+                  r0x1003   0x00004b       data     static _divulong.asm
+                  r0x1002   0x00004c       data     static _divulong.asm
+                  r0x1001   0x00004d       data     static _divulong.asm
+                  r0x1000   0x00004e       data     static _divulong.asm
+                  r0x1007   0x00004f       data     static _divulong.asm
+                  r0x1006   0x000050       data     static _divulong.asm
+                  r0x1005   0x000051       data     static _divulong.asm
+                  r0x1004   0x000052       data     static _divulong.asm
+                  r0x1008   0x000053       data     static _divulong.asm
+                  r0x1009   0x000054       data     static _divulong.asm
+                  r0x100A   0x000055       data     static _divulong.asm
+                  r0x100B   0x000056       data     static _divulong.asm
+                  r0x100C   0x000057       data     static _divulong.asm
+                  r0x100D   0x000058       data     static _divulong.asm
+                  r0x100E   0x000059       data     static _divulong.asm
+                  r0x100F   0x00005a       data     static _divulong.asm
+               __divulong   0x000557    program     extern _divulong.asm
+               _00107_DS_   0x00057d    program     static _divulong.asm
+               _00112_DS_   0x00058a    program     static _divulong.asm
+               _00141_DS_   0x00059e    program     static _divulong.asm
+               _00111_DS_   0x0005bc    program     static _divulong.asm
+               _00114_DS_   0x0005c7    program     static _divulong.asm
+               _00115_DS_   0x0005ce    program     static _divulong.asm
  
