@@ -699,7 +699,7 @@ void low_power_scan_handle(void)
             flag_is_open_lid = 1; // 表示打开了保护盖
         }
     }
-}
+} 
 
 /************************************************
 ;  *    @函数名            : main
@@ -713,8 +713,10 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
+    flag_is_open_lid = 1;                  // 默认表示保护盖打开
+
     LED_GREEN_ON();
-    delay_ms(1000);
+    delay_ms(1000); // 在这段时间内，定时器可以更新保护盖和充电器的状态
     LED_GREEN_OFF();
 
 #if 0  // 测试时使用
@@ -729,9 +731,17 @@ void main(void)
 
     // set_timer0_pwm_when_charging(); // // 测试时使用
 
-    flag_is_open_lid = 1;                  // 表示保护盖打开
-    flag_is_being_charged = 0;             // 表示没有在充电
-    cur_dev_status = CUR_STATUS_POWER_OFF; // 上电之后便关机
+    
+    // flag_is_being_charged = 0;             // 表示没有在充电
+    if (flag_is_being_charged)
+    {
+        // 如果插入了充电器
+        cur_dev_status = CUR_STATUS_BE_CHARGING; // 直接进入被充电的状态，不检测负载
+    }
+    else
+    {
+        cur_dev_status = CUR_STATUS_POWER_OFF; // 上电之后，若没有在被充电，便关机
+    }
 
     while (1)
     {

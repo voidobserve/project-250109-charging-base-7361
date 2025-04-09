@@ -173,7 +173,8 @@ volatile u32 undetect_load_cnt;               // 测试时使用
 
 // #define CHARGING_CURRENT_ADC_VAL (50) // 在检测负载时使用到的比较值(实际测试，它在一直发射，没有检测到负载断开)
 // #define CHARGING_CURRENT_ADC_VAL (150) // 在检测负载时使用到的比较值(实际测试发现，主机充满电断开后，仍认为有负载)
-#define CHARGING_CURRENT_ADC_VAL (200) // 在检测负载时使用到的比较值(实际测试 )
+// #define CHARGING_CURRENT_ADC_VAL (200) // 在检测负载时使用到的比较值(实际测试发现会有概率检测不到主机充满电断开的情况)
+#define CHARGING_CURRENT_ADC_VAL (350) /* 在检测负载时使用到的比较值(实际测试 ) */ 
 
 // 定义adc的通道
 enum
