@@ -215,8 +215,10 @@ typedef union
     } bits;
 } bit_flag;
 volatile bit_flag flag1;
+volatile bit_flag flag2;
 #define flag_is_low_bat flag1.bits.bit0        // 标志位，是否在给主机充电时检测到低电量
 #define flag_is_fully_charged flag1.bits.bit1  // 标志位，是否给主机充满电
+#define flag_is_being_charged flag1.bits.bit2 // 标志位，是否正在被充电
 // #define flag_tim_scan_when_detect_load flag1.bits.bit2 // 在检测负载期间，用于给定时器扫描的标志位
 #define flag_is_enable_detect_load flag1.bits.bit3 // 标志位，是否使能检测负载的功能
 // #define flag_4s flag1.bits.bit4 // 标志位，在检测负载时，是否持续检测了 xx s
@@ -225,15 +227,34 @@ volatile bit_flag flag1;
 #define flag_bat_is_fully_charged flag1.bits.bit6 // 标志位，表示充电座的电池是否被充满电
 #define flag_is_detect_load_when_charged flag1.bits.bit7 // 标志位，是否在被充电时检测到了负载
 
-#define flag_is_being_charged flag1.bits.bit2 // 标志位，是否正在被充电
+
+
+#define flag_is_low_bat_when_being_charging flag2.bits.bit0 // 标志位，是否在被充电时，电池处于低电量
 
 // 毫秒级延时 (误差：在1%以内，1ms、10ms、100ms延时的误差均小于1%)
 // 前提条件：FCPU = FHOSC / 4
+// void delay_ms(u16 xms)
+// {
+//     while (xms)
+//     {
+//         u16 i = 572;
+//         while (i--)
+//         {
+//             Nop();
+//         }
+//         xms--; // 把 --操作放在while()判断条件外面，更节省空间
+
+//         __asm;
+//         clrwdt; // 喂狗
+//         __endasm;
+//     }
+// }
+
 void delay_ms(u16 xms)
 {
     while (xms)
     {
-        u16 i = 572;
+        u16 i = 286;
         while (i--)
         {
             Nop();

@@ -198,7 +198,8 @@ void set_timer0_pwm_when_charging(void)
 void timer3_config(void)
 {
     T3LOAD = 135 - 1; // FCPU 64分频后，这里是1ms触发一次中断（用计算出来的值会有误差，这里加上了一些补偿）
-    T3CR = 0x86;      // 使能定时器，时钟源选择FCPU，64分频
+    // T3CR = 0x86;      // 使能定时器，时钟源选择FCPU，64分频
+    T3CR = (0x01 << 7) | 0x05; // 使能定时器，时钟源选择FCPU，32分频
     T3IE = 1;
 }
 
@@ -699,7 +700,7 @@ void low_power_scan_handle(void)
             flag_is_open_lid = 1; // 表示打开了保护盖
         }
     }
-} 
+}
 
 /************************************************
 ;  *    @函数名            : main
@@ -713,7 +714,7 @@ void main(void)
     Sys_Init();
     delay_ms(10);
 
-    flag_is_open_lid = 1;                  // 默认表示保护盖打开
+    flag_is_open_lid = 1; // 默认表示保护盖打开
 
     LED_GREEN_ON();
     delay_ms(1000); // 在这段时间内，定时器可以更新保护盖和充电器的状态
@@ -731,7 +732,6 @@ void main(void)
 
     // set_timer0_pwm_when_charging(); // // 测试时使用
 
-    
     // flag_is_being_charged = 0;             // 表示没有在充电
     if (flag_is_being_charged)
     {
@@ -779,67 +779,6 @@ void main(void)
 
                 while (1) // 连续检测 xx s，判断有没有负载
                 {
-
-#if 0 // 在该代码块内使用独立的检测负载的方式，未使用定时器来辅助计时
-                        static volatile u16 __detect_ms_cnt = 0;
-                        adc_val = adc_get_val();
-
-                        if (adc_val < 3649)
-                        {
-                            detect_load_cnt++;
-                        }
-                        else if (adc_val > 3872)
-                        {
-                            undetect_load_cnt++;
-                        }
-
-                        delay_ms(1);
-                        __detect_ms_cnt++;
-
-                        if (__detect_ms_cnt >= 2500)
-                        {
-                            __detect_ms_cnt = 0;
-
-                            if (detect_load_cnt > undetect_load_cnt)
-                            {
-                                // 如果进入到这里，说明可能有负载
-                                if ((detect_load_cnt - undetect_load_cnt) > (undetect_load_cnt / 2))
-                                {
-                                    // 如果检测到负载的计数 - 未检测到负载的计数 大于 未检测到负载计数的一半
-                                    // 如果检测到有负载:
-                                    // detect_load_cnt = 0;
-                                    // undetect_load_cnt = 0;
-                                    cur_dev_status = CUR_STATUS_IN_CHARGING;
-                                    set_timer0_pwm_when_charging();
-                                    // break;
-                                }
-                            }
-                            else
-                            {
-                                // 如果进入到这里，说明可能断开/没有负载
-                                // if ((undetect_load_cnt - detect_load_cnt) > (detect_load_cnt / 2))
-                                {
-                                    // 如果未检测到负载的计数 - 检测到负载的计数 大于 检测到负载计数的一半
-                                    // 如果检测到 没有负载
-                                    // detect_load_cnt = 0;
-                                    // undetect_load_cnt = 0;
-                                    stop_charging_the_host(); // 关闭pwm，关闭绿灯
-                                    // break;
-                                }
-                            }
-
-                            if (flag_is_being_charged) // 如果检测到了充电器
-                            {
-                                cur_dev_status = CUR_STATUS_BE_CHARGING; //
-                            }
-
-                            detect_load_cnt = 0;
-                            undetect_load_cnt = 0;
-                            break;
-                        }
-
-#endif // 在该代码块内使用独立的检测负载的方式，未使用定时器来辅助计时
-
                     ret_u8 = is_detect_load();
                     if (0 == ret_u8) // 如果未检测到负载
                     {
@@ -864,6 +803,29 @@ void main(void)
                         stop_charging_the_host(); // 关闭pwm，关闭绿灯
                         break;                    // 退出检测负载的循环
                     }
+
+                    { /* 测试时发现，如果在这段时间电池临近关机的电压，即使有主机，充电座也会认为没有负载，之后直接关机，这里加上补丁 */
+                        adc_sel_channel(ADC_CHANNEL_BAT);
+                        adc_val = adc_get_val();
+                        if (adc_val < 1536) // 3.0V
+                        {
+                            // 如果检测到电池电电量小于 xx V
+                            // 断开充电：
+                            // flag_is_fully_charged = 0;
+                            // flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
+                            stop_charging_the_host(); // 关掉绿灯，让红灯慢闪，停止给主机充电
+                            /*
+                                flag_is_low_bat == 1 && cur_dev_status == CUR_STATUS_IN_CHARGING，
+                                才能进入定时器中断中执行低电量报警功能
+                            */
+                            flag_is_low_bat = 1;
+                            cur_dev_status = CUR_STATUS_IN_CHARGING;
+                            delay_ms(3000);                        // 让定时器控制红灯闪烁几秒，再进入关机（低功耗）
+                            cur_dev_status = CUR_STATUS_POWER_OFF; // 这里要放到后面，闪红灯的定时器中断会判断是正在充电中，才会继续闪红灯
+                            break;
+                        }
+
+                    } /* 测试时发现，如果在这段时间电池临近关机的电压，即使有主机，充电座也会认为没有负载，之后直接关机，这里加上补丁 */
 
                     // 还不能直接进入被充电的状态，会无法关闭绿灯，该状态里面没有相应的处理
                     // else if (flag_is_being_charged) // 如果在检测是否有负载期间 发现有充电器插入
@@ -911,7 +873,7 @@ void main(void)
             // 函数内部会判断是不是处于NONE状态，才进入低功耗：
             low_power_scan_handle();
         } // if (CUR_STATUS_NONE == cur_dev_status)
-        else if (CUR_STATUS_IN_CHARGING == cur_dev_status)
+        else if (CUR_STATUS_IN_CHARGING == cur_dev_status) // 正在给主机充电
         {
             // 如果正在给主机充电，检测：
             // 主机是否充满电
@@ -967,11 +929,13 @@ void main(void)
             {
                 // 如果检测到电池电电量小于 xx V
                 // 断开充电：
-                cur_dev_status = CUR_STATUS_POWER_OFF;
+                flag_is_low_bat = 1;
                 flag_is_fully_charged = 0;
                 flag_is_enable_detect_load = 0; // 清零该标志位，关闭对应的定时器计时功能
-                delay_ms(1);
-                stop_charging_the_host();
+                stop_charging_the_host();       // 关掉绿灯，让红灯慢闪，停止给主机充电
+                // delay_ms(1);
+                delay_ms(3000);                        // 让定时器控制红灯闪烁几秒，再进入关机（低功耗）
+                cur_dev_status = CUR_STATUS_POWER_OFF; // 这里要放到后面，闪红灯的定时器中断会判断是正在充电中，才会继续闪红灯
                 continue;
             }
             // else if (adc_val < 1638 - AD_OFFSET) // 如果充电座的电池电量小于3.2V
@@ -1066,7 +1030,21 @@ void main(void)
             // if (adc_val >= 2150 + 20) //
             if (adc_val >= 2048) // 计算出来是4V
             {
-                flag_bat_is_fully_charged = 1; // 表示充电座的电池被充满
+                flag_bat_is_fully_charged = 1;           // 表示充电座的电池被充满
+                flag_is_low_bat_when_being_charging = 0; // 表示充电座的电池电量不是处于低电量状态
+            }
+            /*
+                测试发现，如果电池电量小于3V，充电器给充电座电池的电流只有45mA，不够充电座给主机充电，
+                反而会拉低充电座的电池电压，导致充电座电池的电池保护板触发保护而断电，因此，
+                充电座的电池电压低于3.1V时，一律不给主机充电，加上改补丁
+            */
+            else if (adc_val <= 1587) // 小于3.1V（参考电压2V，内部VDD/4通道），不给主机充电
+            {
+                flag_is_low_bat_when_being_charging = 1;
+            }
+            else
+            {
+                flag_is_low_bat_when_being_charging = 0; // 其他情况，认为充电座的电池电量不是处于低电量状态
             }
 
             // 检测是否断开了充电器:
@@ -1090,6 +1068,16 @@ void main(void)
                 flag_is_detect_load_when_charged = 0;
                 __lid_status = 0; // 清零，回到默认值
                 __flag_detect_load_status = 0;
+                continue;
+            }
+
+            if (flag_is_low_bat_when_being_charging)
+            {
+                // 如果在被充电时，电池处于低电量，不检测负载，不给负载充电
+                __lid_status = 0;                     // 清零，回到默认值
+                __flag_detect_load_status = 0;        // 清零，回到默认值
+                flag_is_detect_load_when_charged = 0; // 清零，回到默认值
+                stop_charging_the_host();             // 关闭pwm，关闭绿灯
                 continue;
             }
 
@@ -1308,9 +1296,11 @@ void int_isr(void) __interrupt
 #if 1
         { // 负责控制红灯点亮/熄灭的相关代码块
             static u16 blink_cnt = 0;
-            static u16 fully_charged_cnt;                   // 控制满电 xx ms后，关闭红灯的变量
-            if (CUR_STATUS_IN_CHARGING == cur_dev_status && /* 充电座给主机充电时 */
-                flag_is_low_bat)                            /* 充电座电池处于低电量 */
+            static u16 fully_charged_cnt;                    // 控制满电 xx ms后，关闭红灯的变量
+            if ((CUR_STATUS_IN_CHARGING == cur_dev_status && /* 充电座给主机充电时 */
+                 flag_is_low_bat) ||                         /* 充电座电池处于低电量 */
+                (flag_is_low_bat_when_being_charging &&      /* 充电座被充电时，电池处于低电量 */
+                 CUR_STATUS_BE_CHARGING == cur_dev_status))
             {
                 // 如果在充电座给主机充电时，检测到充电座的电池处于低电量
                 // LED_GREEN_OFF(); // 关闭绿灯，避免与红灯冲突
@@ -1337,8 +1327,13 @@ void int_isr(void) __interrupt
             }
             // else if (CUR_STATUS_BE_CHARGING == cur_dev_status && /* 充电座被充电时 */
             //          0 == flag_bat_is_fully_charged)             /* 充电座未被充满电 */
-            else if (flag_is_being_charged &&        /* 充电座被充电时 */
-                     0 == flag_bat_is_fully_charged) /* 充电座未被充满电 */
+            // else if ((flag_is_being_charged &&                  /* 充电座被充电时 */
+            //           0 == flag_bat_is_fully_charged) ||        /* 充电座未被充满电 */
+            //          (1 != flag_is_low_bat_when_being_charging ) /* 充电座的电池不处于低电量 */
+            // )
+            else if (flag_is_being_charged &&                  /* 充电座被充电时 */
+                     0 == flag_bat_is_fully_charged &&         /* 充电座未被充满电 */
+                     0 == flag_is_low_bat_when_being_charging) /* 充电座的电池不处于低电量 */
             {
                 // 如果充电座正在被充电，红灯常亮
                 // LED_GREEN_OFF(); // 关闭绿灯，避免与红灯冲突
