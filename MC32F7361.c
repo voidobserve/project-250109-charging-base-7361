@@ -356,7 +356,8 @@ void Sys_Init(void)
 #endif
 
     // 检测霍尔元器件的引脚:
-    P13PU = 0; // 上拉  --  不能删掉这一句，可能会导致进度睡眠又唤醒
+    // P13PU = 0; // 上拉  --  不能删掉这一句，可能会导致进度睡眠又唤醒
+    P13PU = 1; // 打开上拉  --  不能删掉这一句，可能会导致进度睡眠又唤醒
     P13OE = 0; // 输入模式
     // P13KE = 1; // 使能键盘中断
 
@@ -1024,11 +1025,11 @@ void main(void)
             adc_sel_channel(ADC_CHANNEL_BAT);
             adc_val = adc_get_val();
             bat_adc_val = adc_val;
-            // if (adc_val >= 2124 - AD_OFFSET) // 如果电池电压大于4.15V (实际测试是4.17V，才认为充满电)
+            if (adc_val >= 2124 - AD_OFFSET) // 如果电池电压大于4.15V (实际测试是4.17V，才认为充满电)
             // if (adc_val >= 2150) // 如果电池电压大于4.20V(实际测试，在充电时，电池两端电压到4V就认为充满了)
             // if (adc_val >= 2150 + AD_OFFSET) // 实际测试可能大于4.18V
             // if (adc_val >= 2150 + 20) //
-            if (adc_val >= 2048) // 计算出来是4V
+            // if (adc_val >= 2048) // 计算出来是4V
             {
                 flag_bat_is_fully_charged = 1;           // 表示充电座的电池被充满
                 flag_is_low_bat_when_being_charging = 0; // 表示充电座的电池电量不是处于低电量状态
